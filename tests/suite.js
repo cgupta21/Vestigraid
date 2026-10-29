@@ -93,29 +93,22 @@ async function runTests() {
     }
 
     console.log('=== TEST 1: Canvas Dimensions Across All Cases ===');
-    // Case 01
-    await evaluate('loadLevel(0)');
-    await new Promise(r => setTimeout(r, 50));
-    let c1 = await evaluate('({ w: cv.width, h: cv.height, cols, rows })');
-    assert(c1.w === 640 && c1.h === 320, 'Case 01 canvas dimensions', `w=${c1.w}, h=${c1.h}`);
-
-    // Case 02
-    await evaluate('loadLevel(1)');
-    await new Promise(r => setTimeout(r, 50));
-    let c2 = await evaluate('({ w: cv.width, h: cv.height, cols, rows })');
-    assert(c2.w === 768 && c2.h === 320, 'Case 02 canvas dimensions', `w=${c2.w}, h=${c2.h}`);
-
-    // Case 03
-    await evaluate('loadLevel(2)');
-    await new Promise(r => setTimeout(r, 50));
-    let c3 = await evaluate('({ w: cv.width, h: cv.height, cols, rows })');
-    assert(c3.w === 768 && c3.h === 320, 'Case 03 canvas dimensions', `w=${c3.w}, h=${c3.h}`);
-
-    // Case 04 (Crucial bug check: transitioned from Case 03 where width was already 768)
-    await evaluate('loadLevel(3)');
-    await new Promise(r => setTimeout(r, 50));
-    let c4 = await evaluate('({ w: cv.width, h: cv.height, cols, rows })');
-    assert(c4.w === 768 && c4.h === 448, 'Case 04 canvas height correctly set to 448 (7 rows)', `w=${c4.w}, h=${c4.h}`);
+    const expectedDims = [
+      { lv: 0, w: 640, h: 320, name: 'Case 01' },
+      { lv: 1, w: 768, h: 320, name: 'Case 02' },
+      { lv: 2, w: 768, h: 320, name: 'Case 03' },
+      { lv: 3, w: 768, h: 448, name: 'Case 04' },
+      { lv: 4, w: 768, h: 320, name: 'Case 05' },
+      { lv: 5, w: 768, h: 384, name: 'Case 06' },
+      { lv: 6, w: 768, h: 448, name: 'Case 07' },
+      { lv: 7, w: 768, h: 448, name: 'Case 08' }
+    ];
+    for (const d of expectedDims) {
+      await evaluate(`loadLevel(${d.lv})`);
+      await new Promise(r => setTimeout(r, 50));
+      let dims = await evaluate('({ w: cv.width, h: cv.height, cols, rows })');
+      assert(dims.w === d.w && dims.h === d.h, `${d.name} canvas dimensions (${d.w}x${d.h})`, `w=${dims.w}, h=${dims.h}`);
+    }
 
     console.log('\n=== TEST 2: Regression Test — Repeatedly Pressing Down at Lowest Playable Row in Case 04 ===');
     // In Case 04, start is (1,1). Moving down repeatedly reaches row 5 (lowest playable row: y=5, y=6 is wall).
@@ -325,31 +318,227 @@ async function runTests() {
     await tap('ArrowRight', 'ArrowRight'); // (10,5) -> Exit!
 
     await new Promise(r => setTimeout(r, 200));
-    let wonGame = await evaluate('won');
-    let ovDisplay = await evaluate('document.getElementById("ov").style.display');
-    let ovHtml = await evaluate('document.getElementById("ov").innerHTML');
+    let lvAfterC4 = await evaluate('lv');
+    assert(lvAfterC4 === 4, 'Case 04 completed successfully, advanced to Case 05', `lv=${lvAfterC4}`);
 
-    assert(wonGame === true, 'Case 04 won condition reached (won = true)');
-    assert(ovDisplay === 'flex', 'Victory overlay displayed (display = flex)');
-    assert(ovHtml.includes('CASE CLOSED'), 'Victory overlay displays "CASE CLOSED"');
+    console.log('\n=== TEST 8B: Case 05 ("The Relay") Full Solve ===');
+    await evaluate('hist = []; loadLevel(4)');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 1: Walk to (2,3) [Plate a]
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,2)
+    await tap('ArrowDown', 'ArrowDown'); // (2,3) -> Plate a
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 2: Wait 3, enter Door A (3,2) to (5,1) [Plate b]
+    for (let i = 0; i < 3; i++) await tap(' ', 'Space');
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,2)
+    await tap('ArrowRight', 'ArrowRight'); // (3,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2)
+    await tap('ArrowUp', 'ArrowUp'); // (5,1) -> Plate b
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 3: Wait 9, enter Door A (3,2) to (5,3) [Plate c]
+    for (let i = 0; i < 9; i++) await tap(' ', 'Space');
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,2)
+    await tap('ArrowRight', 'ArrowRight'); // (3,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (4,2)
+    await tap('ArrowDown', 'ArrowDown'); // (4,3)
+    await tap('ArrowRight', 'ArrowRight'); // (5,3) -> Plate c
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 4: Wait 15, traverse doors A, B, C to exit (10,1)
+    for (let i = 0; i < 15; i++) await tap(' ', 'Space');
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,2)
+    await tap('ArrowRight', 'ArrowRight'); // (3,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2)
+    await tap('ArrowRight', 'ArrowRight'); // (6,2)
+    await tap('ArrowRight', 'ArrowRight'); // (7,2) Door B
+    await tap('ArrowRight', 'ArrowRight'); // (8,2)
+    await tap('ArrowRight', 'ArrowRight'); // (9,2) Door C
+    await tap('ArrowRight', 'ArrowRight'); // (10,2)
+    await tap('ArrowUp', 'ArrowUp'); // (10,1) -> Exit E!
+
+    await new Promise(r => setTimeout(r, 200));
+    let lvAfterC5 = await evaluate('lv');
+    assert(lvAfterC5 === 5, 'Case 05 completed successfully, advanced to Case 06', `lv=${lvAfterC5}`);
+
+    console.log('\n=== TEST 8C: Case 06 ("Crossfire") Full Solve ===');
+    await evaluate('hist = []; loadLevel(5)');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 1: Strike Sentry 01 at (2,1), walk to Plate a at (3,3)
+    await tap(' ', 'Space'); // Strike facing right -> kills Sentry 01 at (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowDown', 'ArrowDown'); // (2,2)
+    await tap('ArrowRight', 'ArrowRight'); // (3,2)
+    await tap('ArrowDown', 'ArrowDown'); // (3,3) -> Plate a
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 2: Walk through Door A at (5,2), strike Sentry 02, reach Exit (10,1)
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,2)
+    await tap('ArrowRight', 'ArrowRight'); // (3,2)
+    await tap('ArrowRight', 'ArrowRight'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (6,2)
+    await tap('ArrowRight', 'ArrowRight'); // (7,2)
+    await tap(' ', 'Space'); // Strike facing right -> hits Sentry 02 when at (8,2)
+    await tap('ArrowRight', 'ArrowRight'); // (8,2)
+    await tap('ArrowRight', 'ArrowRight'); // (9,2)
+    await tap('ArrowRight', 'ArrowRight'); // (10,2)
+    await tap('ArrowUp', 'ArrowUp'); // (10,1) -> Exit E!
+
+    await new Promise(r => setTimeout(r, 200));
+    let lvAfterC6 = await evaluate('lv');
+    assert(lvAfterC6 === 6, 'Case 06 completed successfully, advanced to Case 07', `lv=${lvAfterC6}`);
+
+    console.log('\n=== TEST 8D: Case 07 ("The Split") Full Solve ===');
+    await evaluate('hist = []; loadLevel(6)');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 1: Walk to Plate a at (2,3)
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowDown', 'ArrowDown'); // (1,3)
+    await tap('ArrowRight', 'ArrowRight'); // (2,3) -> Plate a
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 2: Wait 3, enter Upper Branch through Door A (4,2) to Plate b at (10,1)
+    for (let i = 0; i < 3; i++) await tap(' ', 'Space');
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,2)
+    await tap('ArrowRight', 'ArrowRight'); // (3,2)
+    await tap('ArrowRight', 'ArrowRight'); // (4,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (5,2)
+    await tap('ArrowUp', 'ArrowUp'); // (5,1)
+    for (let i = 0; i < 5; i++) await tap('ArrowRight', 'ArrowRight'); // (10,1) -> Plate b
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 3: Wait 14, enter Lower Branch through Door B (4,4) to Plate c at (10,5)
+    for (let i = 0; i < 14; i++) await tap(' ', 'Space');
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowDown', 'ArrowDown'); // (1,3)
+    await tap('ArrowDown', 'ArrowDown'); // (1,4)
+    await tap('ArrowRight', 'ArrowRight'); // (2,4)
+    await tap('ArrowRight', 'ArrowRight'); // (3,4)
+    await tap('ArrowRight', 'ArrowRight'); // (4,4) Door B
+    await tap('ArrowRight', 'ArrowRight'); // (5,4)
+    await tap('ArrowDown', 'ArrowDown'); // (5,5)
+    for (let i = 0; i < 5; i++) await tap('ArrowRight', 'ArrowRight'); // (10,5) -> Plate c
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 4: Wait 27, traverse through Door A (4,2) & Door C (9,3) to Exit (10,3)
+    for (let i = 0; i < 27; i++) await tap(' ', 'Space');
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,2)
+    await tap('ArrowRight', 'ArrowRight'); // (3,2)
+    await tap('ArrowRight', 'ArrowRight'); // (4,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (5,2)
+    await tap('ArrowUp', 'ArrowUp'); // (5,1)
+    for (let i = 0; i < 4; i++) await tap('ArrowRight', 'ArrowRight'); // (9,1)
+    await tap('ArrowDown', 'ArrowDown'); // (9,2)
+    await tap('ArrowDown', 'ArrowDown'); // (9,3) Door C
+    await tap('ArrowRight', 'ArrowRight'); // (10,3) -> Exit E!
+
+    await new Promise(r => setTimeout(r, 200));
+    let lvAfterC7 = await evaluate('lv');
+    assert(lvAfterC7 === 7, 'Case 07 completed successfully, advanced to Case 08', `lv=${lvAfterC7}`);
+
+    console.log('\n=== TEST 8E: Case 08 ("The Last Loop") Defeat Enemies & Final Victory ===');
+    await evaluate('hist = []; loadLevel(7)');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 1: Walk to Plate a at (3,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowDown', 'ArrowDown'); // (3,2) -> Plate a
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 2: Wait 3, through Door A (5,2), strike Sentinel 01 at (6,2), walk to Plate b at (10,1)
+    for (let i = 0; i < 3; i++) await tap(' ', 'Space');
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowRight', 'ArrowRight'); // (4,1)
+    await tap('ArrowDown', 'ArrowDown'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2) Door A
+    await tap(' ', 'Space'); // Strike facing right -> kills Sentinel 01 at (6,2)
+    await tap('ArrowRight', 'ArrowRight'); // (6,2)
+    await tap('ArrowUp', 'ArrowUp'); // (6,1)
+    for (let i = 0; i < 4; i++) await tap('ArrowRight', 'ArrowRight'); // (10,1) -> Plate b
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 3: Down to (4,5), wait 8 ticks for Door B to open at t=15, through Door B (5,5), strike Sentinel 02 at (8,5), reach Exit (10,5)
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowDown', 'ArrowDown'); // (1,3)
+    await tap('ArrowDown', 'ArrowDown'); // (1,4)
+    await tap('ArrowDown', 'ArrowDown'); // (1,5)
+    await tap('ArrowRight', 'ArrowRight'); // (2,5)
+    await tap('ArrowRight', 'ArrowRight'); // (3,5)
+    await tap('ArrowRight', 'ArrowRight'); // (4,5)
+    for (let i = 0; i < 8; i++) await tap(' ', 'Space'); // Wait for Door B to open at t=15
+    await tap('ArrowRight', 'ArrowRight'); // (5,5) Door B
+    await tap('ArrowRight', 'ArrowRight'); // (6,5)
+    await tap('ArrowRight', 'ArrowRight'); // (7,5)
+    await tap(' ', 'Space'); // Strike facing right -> kills Sentinel 02 at (8,5)
+
+    // Check enemies status
+    let c8EnemiesStatus = await evaluate('enemies.map(e => ({ tag: e.tag, dead: e.dead }))');
+    console.log('Case 08 enemies status after strikes:', c8EnemiesStatus);
+    assert(c8EnemiesStatus.every(e => e.dead), 'Both Case 08 sentinels defeated');
+
+    // Walk to Exit (10,5)
+    await tap('ArrowRight', 'ArrowRight'); // (8,5)
+    await tap('ArrowRight', 'ArrowRight'); // (9,5)
+    await tap('ArrowRight', 'ArrowRight'); // (10,5) -> Exit E!
+
+    await new Promise(r => setTimeout(r, 200));
+    let wonGame8 = await evaluate('won');
+    let ovDisplay8 = await evaluate('document.getElementById("ov").style.display');
+    let ovHtml8 = await evaluate('document.getElementById("ov").innerHTML');
+
+    assert(wonGame8 === true, 'Case 08 won condition reached (won = true)');
+    assert(ovDisplay8 === 'flex', 'Victory overlay displayed (display = flex)');
+    assert(ovHtml8.includes('ALL CASES CLOSED'), 'Victory overlay displays "ALL CASES CLOSED"');
+
+    // Test restarting final case button
+    await evaluate('document.getElementById("re-last").click()');
+    await new Promise(r => setTimeout(r, 100));
+    let lvAfterRestart = await evaluate('lv');
+    let wonAfterRestart = await evaluate('won');
+    assert(lvAfterRestart === 7 && wonAfterRestart === false, 'Restart final case button resets to Case 08');
 
     console.log('\n=== TEST 9: Timer Balance, Pausing, State Transitions & Auto-Commit ===');
-    // 1. Verify per-case timer values and tick computations
-    await evaluate('loadLevel(0)');
-    let tInfo1 = await evaluate('({ timeLimit: LV[0].timeLimit, MAX })');
-    assert(tInfo1.timeLimit === 30 && tInfo1.MAX === 214, 'Case 01 configured for 30s (214 ticks)', `timeLimit=${tInfo1.timeLimit}, MAX=${tInfo1.MAX}`);
-
-    await evaluate('loadLevel(1)');
-    let tInfo2 = await evaluate('({ timeLimit: LV[1].timeLimit, MAX })');
-    assert(tInfo2.timeLimit === 40 && tInfo2.MAX === 286, 'Case 02 configured for 40s (286 ticks)', `timeLimit=${tInfo2.timeLimit}, MAX=${tInfo2.MAX}`);
-
-    await evaluate('loadLevel(2)');
-    let tInfo3 = await evaluate('({ timeLimit: LV[2].timeLimit, MAX })');
-    assert(tInfo3.timeLimit === 50 && tInfo3.MAX === 357, 'Case 03 configured for 50s (357 ticks)', `timeLimit=${tInfo3.timeLimit}, MAX=${tInfo3.MAX}`);
-
-    await evaluate('loadLevel(3)');
-    let tInfo4 = await evaluate('({ timeLimit: LV[3].timeLimit, MAX })');
-    assert(tInfo4.timeLimit === 70 && tInfo4.MAX === 500, 'Case 04 configured for 70s (500 ticks)', `timeLimit=${tInfo4.timeLimit}, MAX=${tInfo4.MAX}`);
+    // 1. Verify per-case timer values and tick computations across all 8 cases
+    const expectedTimers = [
+      { lv: 0, s: 30, ticks: 214, name: 'Case 01' },
+      { lv: 1, s: 40, ticks: 286, name: 'Case 02' },
+      { lv: 2, s: 50, ticks: 357, name: 'Case 03' },
+      { lv: 3, s: 70, ticks: 500, name: 'Case 04' },
+      { lv: 4, s: 60, ticks: 429, name: 'Case 05' },
+      { lv: 5, s: 65, ticks: 464, name: 'Case 06' },
+      { lv: 6, s: 75, ticks: 536, name: 'Case 07' },
+      { lv: 7, s: 90, ticks: 643, name: 'Case 08' }
+    ];
+    for (const exp of expectedTimers) {
+      await evaluate(`loadLevel(${exp.lv})`);
+      let tInfo = await evaluate('({ timeLimit: LV[lv].timeLimit, MAX })');
+      assert(tInfo.timeLimit === exp.s && tInfo.MAX === exp.ticks, `${exp.name} configured for ${exp.s}s (${exp.ticks} ticks)`, `timeLimit=${tInfo.timeLimit}, MAX=${tInfo.MAX}`);
+    }
 
     // 2. Timer bar display and progress matching
     await evaluate('loadLevel(0)');

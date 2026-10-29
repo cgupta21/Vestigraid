@@ -39,7 +39,7 @@ export const LV = [
       '#....#.....#',
       '############'
     ],
-    enemies: [{ path: [[8, 1], [8, 2], [8, 3]], speed: 2 }]
+    enemies: [{ path: [[8, 1], [8, 2], [8, 3]], speed: 2, tag: '01' }]
   },
   {
     n: 'The Team',
@@ -55,6 +55,72 @@ export const LV = [
       '#..##..##..#',
       '#.........E#',
       '############'
+    ]
+  },
+  {
+    n: 'The Relay',
+    timeLimit: 60,
+    time: 60,
+    hint: 'Three linked security chambers. Loop 1: hold plate a to open door A. Loop 2: hold plate b to open door B. Loop 3: hold plate c to open door C. Loop 4: traverse all three open doors to reach the exit.',
+    map: [
+      '############',
+      '#S.#.b.##.E#',
+      '#..A...B.C.#',
+      '#.a#.c.##..#',
+      '############'
+    ]
+  },
+  {
+    n: 'Crossfire',
+    timeLimit: 65,
+    time: 65,
+    hint: 'Two intersecting sentries patrol the sector. Strike or dodge Sentry 01 to reach plate a, then time your advance past Sentry 02 to reach the exit.',
+    map: [
+      '############',
+      '#S...#....E#',
+      '#....A.....#',
+      '#..a.#.....#',
+      '#....#.....#',
+      '############'
+    ],
+    enemies: [
+      { path: [[2, 1], [2, 2], [2, 3], [2, 4]], speed: 2, tag: '01' },
+      { path: [[8, 2], [8, 3], [8, 4]], speed: 2, tag: '02' }
+    ]
+  },
+  {
+    n: 'The Split',
+    timeLimit: 75,
+    time: 75,
+    hint: 'A branching sector. Loop 1: hold plate a to open upper branch A. Loop 2: enter branch A to hold plate b, opening lower branch B. Loop 3: enter branch B to hold plate c, opening gate C. Loop 4: take either branch to the exit.',
+    map: [
+      '############',
+      '#S..#.....b#',
+      '#...A...#..#',
+      '#.a.####.CE#',
+      '#...B...#..#',
+      '#...#.....c#',
+      '############'
+    ]
+  },
+  {
+    n: 'The Last Loop',
+    boss: true,
+    timeLimit: 90,
+    time: 90,
+    hint: 'The master sector. Use shadows to unlock doors A and B while coordinating attacks against two elite sentinels. Both sentinels must fall before the final exit unlocks.',
+    map: [
+      '############',
+      '#S...#....b#',
+      '#..a.A.#...#',
+      '#....#.#...#',
+      '#....#.#...#',
+      '#....B....E#',
+      '############'
+    ],
+    enemies: [
+      { path: [[6, 2], [6, 3], [6, 4]], speed: 2, tag: '01' },
+      { path: [[7, 5], [8, 5], [9, 5]], speed: 2, tag: '02' }
     ]
   }
 ];
@@ -77,4 +143,3 @@ export function parseLevelMap(levelIndex) {
 
   return { levelDef, grid, rows, cols, start };
 }
-

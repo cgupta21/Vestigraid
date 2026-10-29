@@ -5,7 +5,7 @@ let enemies = [];
 export function initEnemies(levelDef, grid, rows, cols, hist) {
   enemies = [];
 
-  if (levelDef.boss) {
+  if (levelDef.boss && !levelDef.enemies) {
     const sp = [[9, 1], [10, 3], [8, 5]];
     for (let k = 0; k < 3; k++) {
       const h = (hist[k] && hist[k].length > 1) ? hist[k] : [{ x: 0, y: 0 }, { x: 1, y: 0 }];
@@ -23,7 +23,7 @@ export function initEnemies(levelDef, grid, rows, cols, hist) {
     }
   } else {
     (levelDef.enemies || []).forEach(e => {
-      enemies.push({ path: e.path, speed: e.speed, dead: false });
+      enemies.push({ path: e.path, speed: e.speed, dead: false, tag: e.tag || '' });
     });
   }
 

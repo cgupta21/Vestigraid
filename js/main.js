@@ -113,7 +113,7 @@ export function loadLevel(i) {
   loops = 1;
   initEnemies(parsed.levelDef, grid, rows, cols, getHistory());
 
-  $('lvn').textContent = 'CASE 0' + (i + 1);
+  $('lvn').textContent = 'CASE ' + String(i + 1).padStart(2, '0');
   $('lvt').textContent = parsed.levelDef.n;
   $('hint').textContent = parsed.levelDef.hint;
 
@@ -223,7 +223,7 @@ export function win() {
   saveLevelHistory(lv, getRecording());
   if (lv === LV.length - 1) {
     won = true;
-    showOverlay('CASE CLOSED', 'You beat the team made of your own past.<br>Loops on the last case: ' + loops, true);
+    showOverlay('ALL CASES CLOSED', 'You completed all 8 sectors and broke the loop forever.<br>Loops on final case: ' + loops, true);
     return;
   }
   loadLevelNext();
@@ -232,7 +232,7 @@ export function win() {
 export function loadLevelNext() {
   const nextLv = lv + 1;
   loadLevel(nextLv);
-  say('Case ' + (nextLv + 1) + ' — ' + LV[nextLv].n);
+  say('Case ' + String(nextLv + 1).padStart(2, '0') + ' — ' + LV[nextLv].n);
 }
 
 export function showOverlay(header, body, canPlayAgain) {
@@ -240,7 +240,7 @@ export function showOverlay(header, body, canPlayAgain) {
   ovEl.style.display = 'flex';
   ovEl.innerHTML = (canPlayAgain ? '<img src="brand/icon.svg" alt="Vestigraid" class="ov-icon">' : '') +
     '<h2>' + header + '</h2><p>' + body + '</p>' +
-    (canPlayAgain ? '<button class="btn" id="ag">Play again</button>' : '');
+    (canPlayAgain ? '<div class="ov-btns"><button class="btn" id="ag">Play again</button><button class="btn" id="re-last">Restart final case</button></div>' : '');
   if (canPlayAgain) {
     $('ag').onclick = () => {
       ovEl.style.display = 'none';
@@ -250,6 +250,15 @@ export function showOverlay(header, body, canPlayAgain) {
       paused = false;
       loadLevel(0);
     };
+    if ($('re-last')) {
+      $('re-last').onclick = () => {
+        ovEl.style.display = 'none';
+        won = false;
+        clearInput();
+        paused = false;
+        loadLevel(LV.length - 1);
+      };
+    }
   }
 }
 

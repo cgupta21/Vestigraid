@@ -15,10 +15,24 @@
 </p>
 
 <p align="center">
+  <a href="https://vestigraid.netlify.app/">
+    <strong>🎮 PLAY VESTIGRAID ONLINE</strong>
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://vestigraid.netlify.app/">
+    https://vestigraid.netlify.app/
+  </a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/JavaScript-ES2022%20Modules-F7DF1E?logo=javascript&logoColor=black" alt="JavaScript ES2022">
   <img src="https://img.shields.io/badge/HTML5-Canvas-E34F26?logo=html5&logoColor=white" alt="HTML5 Canvas">
   <img src="https://img.shields.io/badge/CSS3-Modern%20Grid%20%26%20Flex-1572B6?logo=css3&logoColor=white" alt="CSS3">
-  <img src="https://img.shields.io/badge/Tests-63%20Passing-brightgreen?logo=googlechrome&logoColor=white" alt="Tests 63 Passing">
+  <img src="https://img.shields.io/badge/Tests-77%20Passing-brightgreen?logo=googlechrome&logoColor=white" alt="Tests 77 Passing">
+  <img src="https://img.shields.io/badge/Cases-8%20Playable-orange?logo=target&logoColor=white" alt="8 Playable Cases">
+  <a href="https://vestigraid.netlify.app/"><img src="https://img.shields.io/badge/Demo-vestigraid.netlify.app-00C7B7?logo=netlify&logoColor=white" alt="Live Demo"></a>
   <img src="https://img.shields.io/badge/License-Not%20Specified-lightgrey" alt="License">
 </p>
 
@@ -31,7 +45,25 @@
 
 Players navigate confidential security sectors called **Cases**. In each case, your past movements and actions are recorded in real time. When you commit a loop or run out of time, your past run manifests as a **Shadow** (or Echo) replaying your previous steps. These shadows can be leveraged collaboratively—such as pressing remote floor plates to keep blast doors open—but they physically occupy grid cells and will block your future self.
 
-In the climactic final encounter, the mechanic undergoes a dramatic inversion: your recorded echoes turn rogue, hunting you down across the sector. To escape, you must coordinate cross-loop attacks to eliminate all three rogue echoes simultaneously.
+Across eight distinct cases, puzzles escalate from fundamental door-holding maneuvers to multi-chamber relays, crossing sentry fire, synchronized corridor splits, rogue echo hunts, and master sentinel sweeps.
+
+---
+
+## 🌐 Play Online
+
+Experience Vestigraid directly in your web browser with zero setup or installation required:
+
+<p align="center">
+  <a href="https://vestigraid.netlify.app/">
+    <img src="https://img.shields.io/badge/PLAY%20ONLINE-vestigraid.netlify.app-00C7B7?style=for-the-badge&logo=netlify&logoColor=white" alt="Play Vestigraid Online">
+  </a>
+  <br>
+  <strong>Play deployed game:</strong> <a href="https://vestigraid.netlify.app/">https://vestigraid.netlify.app/</a>
+</p>
+
+- **Zero Installation**: Runs 100% client-side in Google Chrome, Firefox, Safari, Edge, or any modern standards-compliant browser.
+- **Cross-Platform Controls**: Play on desktop using keyboard inputs (`W` `A` `S` `D` / Arrow keys, `Spacebar`, `R`) or on mobile and touch devices using the integrated virtual directional pad and action buttons.
+- **All 8 Cases Live**: Progress seamlessly from Case 01 through Case 08 ("The Last Loop").
 
 ---
 
@@ -46,6 +78,10 @@ In the climactic final encounter, the mechanic undergoes a dramatic inversion: y
   - **Case 02 — Two Keys** (*40 seconds / 286 ticks*): Multi-stage puzzle requiring chained loops to activate plates `a` and `b` in sequence to open doors `A` and `B`.
   - **Case 03 — The Sentry** (*50 seconds / 357 ticks*): Introduces real-time enemy patrol routes across waypoint tracks. Requires precise timing to cross the sentry lane safely.
   - **Case 04 — The Team** (*70 seconds / 500 ticks*): Boss puzzle. Your past loop trajectories are transformed into three red hostile echoes that patrol and hunt. All three must be destroyed in the same loop before the exit unlock triggers.
+  - **Case 05 — The Relay** (*60 seconds / 429 ticks*): Triple-chamber security relay. Chained shadows must systematically trigger floor switches `a`, `b`, and `c` to unlock blast gates `A`, `B`, and `C` in sequence.
+  - **Case 06 — Crossfire** (*65 seconds / 464 ticks*): Sentry coordination puzzle featuring two intersecting sentry patrol lanes (`01` and `02`) alongside blast door `A`. Requires precise timing and combat strikes to slip past the crossfire.
+  - **Case 07 — The Split** (*75 seconds / 536 ticks*): Dual-branch sector requiring simultaneous coordination across upper and lower wings to unlock gates `A`, `B`, and final gate `C`.
+  - **Case 08 — The Last Loop** (*90 seconds / 643 ticks*): Master sector uniting dual pressure plates (`a`, `b`) and two high-speed roaming sentinels (`01`, `02`) who must both be eliminated to unseal the final exit and complete all cases.
 - **Dynamic Hi-DPI Rendering**: Automatic canvas scaling using `window.devicePixelRatio` ensures pixel-sharp geometry and text across high-density displays (Retina, 4K) without layout shifts.
 - **Cross-Platform Responsive Design**: Playable with standard desktop keyboard controls or mobile touch screens via an integrated on-screen directional pad and action buttons.
 
@@ -69,7 +105,7 @@ In the climactic final encounter, the mechanic undergoes a dramatic inversion: y
 2. **Coordinate with Past Echoes**: Step on pressure plates or position yourself strategically, then press `R` to commit the loop. A shadow is minted that repeats your exact timeline.
 3. **Avoid Collisions**: Colliding with active enemies or walking into an enemy's tile triggers **"Caught"**, erasing the current loop and requiring a retry.
 4. **Time Management**: The progress bar at the bottom reflects your remaining case time. If the timer expires before you reach the exit, the game automatically commits your actions into a shadow and begins the next loop.
-5. **Clear the Case**: Reaching the exit tile (`E`) advances you to the next sector. In Case 04, the exit remains sealed until all three rogue echoes are struck down.
+5. **Clear the Case**: Reaching the exit tile (`E`) advances you to the next sector. In combat boss cases (Case 04 & Case 08), the exit remains sealed until all designated hostile entities are neutralized. Clearing Case 08 presents the final **"ALL CASES CLOSED"** victory terminal with full case replay options.
 
 ---
 
@@ -101,7 +137,6 @@ Vestigraid/
 ├── favicon.ico           # Browser shortcut icon
 ├── og-image.png          # Social sharing and Open Graph preview image (1200x630)
 ├── site.webmanifest      # Progressive Web App manifest
-├── README.txt            # Plain-text game documentation and itch.io bundle notes
 ├── README.md             # Project documentation and engineering overview
 ├── brand/                # Vector and raster identity assets
 │   ├── logo.svg          # Light-theme vector logo
@@ -182,17 +217,22 @@ node tests/suite.js
 
 ### Test Coverage Highlights
 
-The suite performs **63 automated assertions** across 10 functional test categories:
+The suite performs **77 automated assertions** across 10 functional test categories:
 
-1. **Canvas Dimensions**: Verifies correct pixel scaling and aspect ratios across all 4 cases.
+1. **Canvas Dimensions**: Verifies correct pixel scaling and aspect ratios across all 8 cases.
 2. **Boundary Collision & Clamping**: Verifies that pressing directions into exterior bounds or solid walls prevents illegal tile escapes and never triggers false deaths.
 3. **Wall Impassability**: Ensures perimeter walls and interior obstacles remain completely impassable.
 4. **Melee Strike Mechanics**: Confirms directional attacks register in the player's facing direction and enforce cooldown delays.
 5. **Enemy Collision Logic**: Confirms that legitimate enemy collisions (including swap-cross encounters) properly trigger failure resets.
 6. **State Transitions**: Validates loop starts, pause/unpause idempotency (`P`), and full-case resets (`Z`).
 7. **Complete Gameplay Walkthrough**: Automatically simulates puzzle solutions for Cases 01, 02, and 03.
-8. **Boss Victory Verification**: Simulates the multi-loop elimination of all three Case 04 rogue echoes and confirms the `CASE CLOSED` victory overlay appears.
-9. **Timer System & Auto-Commit**: Asserts timer configurations (30s, 40s, 50s, 70s), verifies pause freezing, and checks auto-commit behavior upon tick expiration.
+8. **Boss & Advanced Case Solves**: Simulates multi-loop solutions and verified completions for:
+   - **Case 04**: Defeat of all three rogue echoes advancing to Case 05.
+   - **Case 05**: 4-loop relay puzzle solution through gates `A`, `B`, and `C`.
+   - **Case 06**: 2-loop sentry strike and gate escape.
+   - **Case 07**: 4-loop dual-branch coordination and final exit run.
+   - **Case 08**: 3-loop master run eliminating both sentinels, unlocking exit, asserting **"ALL CASES CLOSED"**, and verifying final case restart.
+9. **Timer System & Auto-Commit**: Asserts timer configurations across all 8 cases (30s, 40s, 50s, 70s, 60s, 65s, 75s, 90s), verifies pause freezing, and checks auto-commit behavior upon tick expiration.
 10. **Branding Assets & Responsiveness**: Verifies the presence and integrity of all 14 brand files, validates DOM element loading, checks manifest/meta links, and verifies logo layout without stage overlap on both desktop (1024×768) and mobile (375×667) viewports.
 
 ---
@@ -236,7 +276,7 @@ Contributions, bug reports, and suggestions are welcome!
    git checkout -b feature/new-case
    ```
 3. **Follow the code style**: Keep JavaScript modular, avoid introducing heavy build dependencies, and preserve the terminal-kraft visual aesthetic.
-4. **Run the regression suite**: Ensure all 63 tests pass before submitting changes:
+4. **Run the regression suite**: Ensure all 77 tests pass before submitting changes:
    ```bash
    node tests/suite.js
    ```
@@ -246,7 +286,7 @@ Contributions, bug reports, and suggestions are welcome!
 
 ## 🗺️ Roadmap
 
-The current version of Vestigraid provides four complete, fully tested cases. Potential future enhancements under consideration:
+The current version of Vestigraid provides eight complete, fully tested cases. Potential future enhancements under consideration:
 
 - [ ] **Audio & Sound Design**: Procedural retro synth sound effects for footsteps, strikes, door opening, and caught alerts.
 - [ ] **Speedrun Timer**: High-precision tick counters and best-time tracking saved to `localStorage`.

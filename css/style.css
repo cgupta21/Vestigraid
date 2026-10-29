@@ -260,6 +260,13 @@ kbd {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
+.ov-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 #ov h2 {
   font-family: Anton, Impact, sans-serif;
   font-weight: 400;
