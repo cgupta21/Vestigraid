@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vestigraid</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#2a1f18;--kraft:#c8ae7e;--kraft2:#b99b68;--ink:#1f1610;--org:#e2531f;--olv:#66722b;--blood:#8e1b1b;--mus:#d9a21b;--paper:#e6d3a6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:inherit}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--paper);font-family:'Courier Prime','Courier New',monospace;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+header{width:100%;max-width:980px;padding:14px 16px 6px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:Anton,Impact,'Arial Narrow',sans-serif;font-weight:400;font-size:clamp(28px,6vw,46px);letter-spacing:.04em;margin:0;color:var(--org);text-transform:uppercase;line-height:1}
+h1 span{color:var(--kraft)}
+.sub{font-size:13px;color:var(--kraft2);max-width:340px}
+main{width:100%;max-width:980px;display:flex;gap:16px;padding:8px 16px 16px;flex-wrap:wrap;justify-content:center}
+.stage{flex:1 1 560px;min-width:0;background:var(--kraft);border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:10px;position:relative}
+canvas{display:block;width:100%;height:auto;background:var(--kraft)}
+.bar{height:10px;background:var(--kraft2);border:2px solid var(--ink);margin-top:8px}
+.bar i{display:block;height:100%;width:0;background:var(--org);transition:width .12s linear}
+.file{flex:0 1 260px;background:var(--paper);color:var(--ink);border:3px solid var(--ink);box-shadow:6px 6px 0 var(--blood);padding:12px 14px;font-size:14px;align-self:flex-start}
+.file h2{font-family:Anton,Impact,sans-serif;font-weight:400;margin:0 0 6px;font-size:20px;letter-spacing:.05em;text-transform:uppercase}
+.file p{margin:6px 0}
+.tag{display:inline-block;border:2px solid var(--blood);color:var(--blood);padding:1px 6px;font-weight:700;transform:rotate(-3deg);margin-bottom:6px}
+#msg{min-height:44px;font-weight:700}
+.sh{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+.sh b{background:var(--olv);color:var(--paper);padding:2px 7px;font-size:12px;border:2px solid var(--ink)}
+.sh em{font-style:normal;font-size:12px;opacity:.7}
+.keys{font-size:12px;line-height:1.7;border-top:2px dashed var(--ink);padding-top:8px}
+kbd{background:var(--ink);color:var(--paper);padding:0 5px;font-family:inherit}
+.pad{display:none;gap:6px;margin-top:10px;justify-content:space-between;align-items:center;user-select:none;touch-action:none}
+.pad button,.btn{font-family:Anton,Impact,sans-serif;letter-spacing:.06em;background:var(--ink);color:var(--paper);border:0;padding:12px 14px;font-size:16px;cursor:pointer;text-transform:uppercase}
+.btn:hover,.pad button:active{background:var(--org);color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(3,48px);gap:4px}
+.grid button{padding:10px 0}
+.side{display:flex;flex-direction:column;gap:6px}
+@media (pointer:coarse){.pad{display:flex}}
+#ov{position:absolute;inset:0;background:rgba(31,22,16,.96);color:var(--paper);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;gap:10px}
+#ov h2{font-family:Anton,Impact,sans-serif;font-weight:400;font-size:clamp(28px,8vw,44px);color:var(--mus);margin:0;letter-spacing:.05em}
+#ov p{margin:0;font-size:15px;max-width:340px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+<h1>Vestig<span>raid</span></h1>
+<div class="sub">Every move leaves a mark. Every mark fights back.</div>
+</header>
+<main>
+<div class="stage">
+<canvas id="c"></canvas>
+<div class="bar"><i id="tb"></i></div>
+<div class="pad">
+<div class="grid"><span></span><button data-k="up">▲</button><span></span><button data-k="left">◀</button><button data-k="down">▼</button><button data-k="right">▶</button></div>
+<div class="side"><button data-k="strike">Strike</button><button data-k="loop">Loop</button><button data-k="pause">Pause</button><button data-k="reset">Reset</button></div>
+</div>
+<div id="ov"></div>
+</div>
+<aside class="file">
+<span class="tag" id="lvn">CASE 01</span>
+<h2 id="lvt">—</h2>
+<p id="hint"></p>
+<div>Loop <b id="loopn">1</b> · Shadows</div>
+<div class="sh" id="sh"></div>
+<div id="msg"></div>
+<div class="keys"><kbd>WASD</kbd>/<kbd>↑←↓→</kbd> move<br><kbd>SPACE</kbd> strike ahead<br><kbd>R</kbd> end loop (leave shadow)<br><kbd>P</kbd>/<kbd>ESC</kbd> pause<br><kbd>Z</kbd> reset case<br>Shadows replay your moves, then freeze at the end and block you.</div>
+</aside>
+</main>
+<script>
+// ─── Constants ────────────────────────────────────────────────────────────────
+const TICK = 140; // ms per game tick
+const MAX_DT = TICK * 3; // cap dt to prevent multi-tick bursts after tab-switch
+let MAX = 214;   // max ticks per loop (configured per case)
+
+// ─── Level definitions ────────────────────────────────────────────────────────
+const LV = [
+  { n: 'Hold the Door', timeLimit: 30, time: 30,
+    hint: 'Walk to the plate (marked A), press R to leave your shadow there. Your shadow replays those moves and holds the door open while you walk through in the next loop.',
+    map: ['##########','#S..#....#','#...A...E#','#.a.#....#','##########'] },
+  { n: 'Two Keys', timeLimit: 40, time: 40,
+    hint: 'Two plates (a, b), two doors (A, B). Loop 1: leave a shadow on plate a. Loop 2: use the open door A to reach plate b, then leave another shadow. Loop 3: both shadows hold the doors — walk to the exit.',
+    map: ['############','#S..#.b....#','#.a.A..#...#','####...B..E#','############'] },
+  { n: 'The Sentry', timeLimit: 50, time: 50,
+    hint: 'Loop 1: leave a shadow on plate a. Loop 2: the door stays open — walk through, time your approach to pass x=8 when the sentry is NOT in row 2, and reach the exit.',
+    map: ['############','#S...#.....#','#..a.A....E#','#....#.....#','############'],
+    enemies: [{ path: [[8,1],[8,2],[8,3]], speed: 2 }] },
+  { n: 'The Team', boss: true, timeLimit: 70, time: 70,
+    hint: 'Your old runs are back, wearing red. All three must fall in the same run to open the exit. Use shadows to strike multiple enemies at once.',
+    map: ['############','#S.........#','#..##..##..#','#..........#','#..##..##..#','#.........E#','############'] }
+];
+
+// ─── DOM & canvas ─────────────────────────────────────────────────────────────
+const cv = document.getElementById('c');
+const cx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+
+// ─── Game state ───────────────────────────────────────────────────────────────
+let lv, grid, cols, rows, start;
+let ghosts, rec, t, pos, face, cd, enemies;
+let started, loops, won, paused;
+let hist = [];             // per-level recordings for the boss level
+let q = { dir: null, strike: false };
+let held = [];
+let acc = 0, last = 0;
+let flash = 0;
+
+const DIRS = { up: [0,-1], down: [0,1], left: [-1,0], right: [1,0] };
+const KEY  = {
+  ArrowUp:'up', w:'up', W:'up',
+  ArrowDown:'down', s:'down', S:'down',
+  ArrowLeft:'left', a:'left', A:'left',
+  ArrowRight:'right', d:'right', D:'right'
+};
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+function say(s) { $('msg').textContent = s; }
+
+function ui() {
+  $('loopn').textContent = loops;
+  const pct = Math.min(100, (t / MAX * 100));
+  $('tb').style.width = pct + '%';
+  const remSec = Math.max(0, Math.ceil((MAX - t) * TICK / 1000));
+  $('tb').title = remSec + 's remaining';
+  $('tb').setAttribute('data-remaining', remSec);
+  $('tb').setAttribute('data-max', MAX);
+  const cdEl = $('countdown') || $('timer') || $('time') || $('tc');
+  if (cdEl) cdEl.textContent = remSec + 's';
+  $('sh').innerHTML = ghosts.length
+    ? ghosts.map((g, i) => '<b>#' + (i+1) + '</b><em>' + g.length + 't</em>').join('')
+    : '<em>none yet</em>';
+}
+
+// ─── Level loading ────────────────────────────────────────────────────────────
+function loadLevel(i) {
+  lv = i;
+  won = false;
+  const L = LV[i];
+  grid = L.map.map(r => r.split(''));
+  rows = grid.length;
+  cols = grid[0].length;
+
+  const timeLimit = L.timeLimit || L.time || 30;
+  MAX = Math.round((timeLimit * 1000) / TICK);
+
+  const T = Math.max(24, Math.min(64, Math.floor(900 / cols)));
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = cols * T * dpr;
+  cv.height = rows * T * dpr;
+
+  // Locate and erase start marker
+  for (let y = 0; y < rows; y++)
+    for (let x = 0; x < cols; x++)
+      if (grid[y][x] === 'S') { start = { x, y }; grid[y][x] = '.'; }
+
+  ghosts = [];
+  loops  = 1;
+  enemies = [];
+
+  if (L.boss) {
+    const sp = [[9,1],[10,3],[8,5]];
+    for (let k = 0; k < 3; k++) {
+      const h = hist[k] || [{ x:0, y:0 }, { x:1, y:0 }];
+      let cur = { x: sp[k][0], y: sp[k][1] };
+      const path = [[cur.x, cur.y]];
+      for (let j = 1; j < h.length; j++) {
+        const nx = cur.x + (h[j].x - h[j-1].x);
+        const ny = cur.y + (h[j].y - h[j-1].y);
+        if (ny >= 0 && ny < rows && nx >= 0 && nx < cols && grid[ny][nx] !== '#' && grid[ny][nx] !== 'E')
+          cur = { x: nx, y: ny };
+        path.push([cur.x, cur.y]);
+      }
+      enemies.push({ hunt: true, path, tag: '0' + (k+1), dead: false });
+    }
+  } else {
+    (L.enemies || []).forEach(e => enemies.push({ path: e.path, speed: e.speed, dead: false }));
+  }
+
+  $('lvn').textContent = 'CASE 0' + (i + 1);
+  $('lvt').textContent = L.n;
+  $('hint').textContent = L.hint;
+
+  // FIX: clear held keys so no stale input carries over after reset
+  held = [];
+  q    = { dir: null, strike: false };
+  paused = false;
+
+  startRound();
+  started = false;
+  say('Press a move key to start the loop.');
+}
+
+// ─── Round / loop reset ───────────────────────────────────────────────────────
+function startRound() {
+  t    = 0;
+  pos  = { x: start.x, y: start.y };
+  face = [1, 0];
+  cd   = 0;
+  rec  = [{ x: pos.x, y: pos.y, f: face, s: 0 }];
+  // Reset all enemies alive for this loop
+  enemies.forEach(e => e.dead = false);
+  q = { dir: null, strike: false };
+  ui();
+}
+
+// ─── Enemy position ───────────────────────────────────────────────────────────
+function ePos(e, tt) {
+  if (e.hunt) {
+    if (!e.path.length) return { x: -1, y: -1 }; // safety: empty path
+    return { x: e.path[tt % e.path.length][0], y: e.path[tt % e.path.length][1] };
+  }
+  const n = e.path.length;
+  if (n <= 1) return { x: e.path[0][0], y: e.path[0][1] }; // stationary
+  const cyc = 2 * (n - 1);
+  let i = Math.floor(tt / e.speed) % cyc;
+  if (i >= n) i = cyc - i;
+  return { x: e.path[i][0], y: e.path[i][1] };
+}
+
+// ─── Ghost position (freezes at last frame) ───────────────────────────────────
+function gPos(g, tt) { return g[Math.min(tt, g.length - 1)]; }
+
+// ─── Active pressure plates ───────────────────────────────────────────────────
+function plates(tt, p) {
+  const s = new Set();
+  const chk = (x, y) => {
+    const c = grid[y][x];
+    if (c >= 'a' && c <= 'z') s.add(c); // all lowercase letters are plates
+  };
+  ghosts.forEach(g => { const r = gPos(g, tt); chk(r.x, r.y); });
+  chk(p.x, p.y);
+  return s;
+}
+
+// ─── Collision / passability ──────────────────────────────────────────────────
+function solid(x, y, act, tt) {
+  if (x < 0 || y < 0 || x >= cols || y >= rows) return true;
+  if (!grid[y] || grid[y][x] === undefined) return true;
+  const c = grid[y][x];
+  if (c === '#') return true;
+  // Exit tile is always passable (win condition checked separately in tick)
+  if (c === 'E') return false;
+  // Uppercase letters (doors A-Z) block unless the matching plate is active
+  if (c >= 'A' && c <= 'Z' && !act.has(c.toLowerCase())) return true;
+  // Ghosts physically block the player
+  return ghosts.some(g => { const r = gPos(g, tt); return r.x === x && r.y === y; });
+}
+
+// ─── Kill an entity at grid position (x,y) at tick tt ────────────────────────
+function killAt(x, y, tt) {
+  enemies.forEach(e => {
+    if (e.dead) return;
+    const p = ePos(e, tt);
+    if (p.x === x && p.y === y) { e.dead = true; say('Hit. One less.'); }
+  });
+}
+
+// ─── Game tick ────────────────────────────────────────────────────────────────
+function tick() {
+  if (won) return;
+  t++;
+
+  // Consume queued input
+  const d = q.dir || held[held.length - 1] || null;
+  const wantStrike = q.strike;
+  q.dir = null; q.strike = false;
+
+  const prev = { x: pos.x, y: pos.y };
+
+  // Move player
+  if (d && DIRS[d]) {
+    face = DIRS[d];
+    const act = plates(t, pos);
+    const nx = pos.x + face[0], ny = pos.y + face[1];
+    if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && !solid(nx, ny, act, t)) {
+      pos = { x: nx, y: ny };
+    }
+  }
+  pos.x = Math.max(0, Math.min(cols - 1, pos.x));
+  pos.y = Math.max(0, Math.min(rows - 1, pos.y));
+
+  // Player strike
+  let s = 0;
+  if (cd > 0) cd--;
+  if (wantStrike && cd === 0) { s = 1; cd = 3; killAt(pos.x + face[0], pos.y + face[1], t); }
+
+  // Ghost strikes
+  ghosts.forEach(g => {
+    const r = gPos(g, t);
+    if (r.s && t < g.length) killAt(r.x + r.f[0], r.y + r.f[1], t);
+  });
+
+  // Record frame
+  rec.push({ x: pos.x, y: pos.y, f: face, s });
+
+  // Enemy contact kills player
+  for (const e of enemies) {
+    if (e.dead) continue;
+    const a = ePos(e, t), b = ePos(e, t - 1);
+    const sameCellNow     = a.x === pos.x  && a.y === pos.y;
+    const swapCross       = a.x === prev.x && a.y === prev.y && b.x === pos.x && b.y === pos.y;
+    if (sameCellNow || swapCross) { die(); return; }
+  }
+
+  // Victory check
+  if (grid[pos.y][pos.x] === 'E') {
+    if (LV[lv].boss && enemies.some(e => !e.dead)) {
+      say('Kill all enemies to unlock the exit!');
+    } else {
+      win(); return;
+    }
+  }
+
+  // Time limit: auto-commit
+  if (t >= MAX) { commit(true); return; }
+
+  ui();
+}
+
+// ─── Death ────────────────────────────────────────────────────────────────────
+function die() {
+  say('Caught. That loop is erased — try again.');
+  flash = 8;
+  // Clear input state before resetting round
+  held = [];
+  q    = { dir: null, strike: false };
+  startRound();
+  started = false;
+}
+
+// ─── Commit loop — save recording as a ghost ──────────────────────────────────
+function commit(auto) {
+  if (t < 2) { say('Move first. An empty loop leaves no shadow.'); return; }
+  ghosts.push(rec.slice());
+  if (ghosts.length > 4) ghosts.shift();
+  loops++;
+  held = [];
+  q    = { dir: null, strike: false };
+  startRound();
+  started = false;
+  say(auto ? 'Time ran out. Your run became a shadow.' : 'Shadow left behind. New loop.');
+}
+
+// ─── Victory ─────────────────────────────────────────────────────────────────
+function win() {
+  hist[lv] = rec.slice();
+  if (lv === LV.length - 1) {
+    won = true;
+    ov('CASE CLOSED',
+       'You beat the team made of your own past.<br>Loops on the last case: ' + loops,
+       true);
+    return;
+  }
+  loadLevelNext();
+}
+
+function loadLevelNext() {
+  const n = lv + 1;
+  loadLevel(n);
+  say('Case ' + (n + 1) + ' — ' + LV[n].n);
+}
+
+// ─── Overlay (win / info screens) ────────────────────────────────────────────
+function ov(h, body, again) {
+  const o = $('ov');
+  o.style.display = 'flex';
+  o.innerHTML = '<h2>' + h + '</h2><p>' + body + '</p>' +
+    (again ? '<button class="btn" id="ag">Play again</button>' : '');
+  if (again) $('ag').onclick = () => {
+    o.style.display = 'none';
+    won  = false;
+    hist = [];
+    held = [];
+    acc  = 0;
+    last = 0;
+    paused = false;
+    loadLevel(0);
+  };
+}
+
+// ─── Input — keyboard ─────────────────────────────────────────────────────────
+addEventListener('keydown', e => {
+  // Ignore keys when focus is inside a form element (buttons in overlay, etc.)
+  if (e.target !== document.body && e.target !== document.documentElement) return;
+  const k = KEY[e.key];
+  if (k) {
+    e.preventDefault();
+    if (!held.includes(k)) held.push(k);
+    q.dir   = k;
+    if (!paused) started = true;
+  } else if (e.key === ' ') {
+    e.preventDefault();
+    q.strike = true;
+    if (!paused) started = true;
+  } else if (e.key === 'r' || e.key === 'R') {
+    commit(false);
+  } else if (e.key === 'z' || e.key === 'Z' || e.key === 'Backspace') {
+    e.preventDefault();
+    loadLevel(lv);
+  } else if ((e.key === 'p' || e.key === 'P' || e.key === 'Escape') && started && !won) {
+    e.preventDefault();
+    paused = !paused;
+    say(paused ? 'Paused. Press P to resume.' : '');
+  }
+});
+
+addEventListener('keyup', e => {
+  const k = KEY[e.key];
+  if (k) held = held.filter(x => x !== k);
+});
+
+// ─── Input — touch/pointer pad ────────────────────────────────────────────────
+document.querySelectorAll('.pad button').forEach(b => {
+  const k = b.dataset.k;
+  b.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    if (k === 'pause') {
+      if (started && !won) {
+        paused = !paused;
+        say(paused ? 'Paused. Tap Pause to resume.' : '');
+      }
+      return;
+    }
+    if (k === 'reset') {
+      loadLevel(lv);
+      return;
+    }
+    if (paused) return;
+    started = true;
+    if (DIRS[k]) {
+      q.dir = k;
+      if (!held.includes(k)) held.push(k);
+    } else if (k === 'strike') {
+      q.strike = true;
+    } else if (k === 'loop') {
+      commit(false);
+    }
+  });
+  const release = () => { held = held.filter(x => x !== k); };
+  b.addEventListener('pointerup',     release);
+  b.addEventListener('pointerleave',  release);
+  b.addEventListener('pointercancel', release);
+});
+
+// ─── Drawing ──────────────────────────────────────────────────────────────────
+const C = {
+  floor:'#d6c196', line:'#c2a977', ink:'#1f1610', wall2:'#3b2c21',
+  org:'#e2531f', olv:'#66722b', blood:'#8e1b1b', mus:'#d9a21b', paper:'#e6d3a6'
+};
+
+function draw() {
+  const T   = Math.max(24, Math.min(64, Math.floor(900 / cols)));
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cols * T, H = rows * T;
+
+  if (cv.width !== W * dpr || cv.height !== H * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cx.fillStyle = C.floor;
+  cx.fillRect(0, 0, W, H);
+
+  const act = plates(t, pos);
+
+  // Tiles
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const c = grid[y][x], px = x * T, py = y * T;
+      cx.strokeStyle = C.line; cx.lineWidth = 1;
+      cx.strokeRect(px + .5, py + .5, T, T);
+
+      if (c === '#') {
+        cx.fillStyle = C.ink;
+        cx.fillRect(px, py, T, T);
+        cx.strokeStyle = C.wall2; cx.lineWidth = 2;
+        cx.save(); cx.beginPath(); cx.rect(px, py, T, T); cx.clip();
+        cx.beginPath();
+        for (let i = -T; i < T; i += 8) { cx.moveTo(px+i, py+T); cx.lineTo(px+i+T, py); }
+        cx.stroke(); cx.restore();
+
+      } else if (c >= 'a' && c <= 'z') {
+        // Pressure plate
+        const on = act.has(c);
+        cx.strokeStyle = C.ink; cx.lineWidth = 3;
+        cx.fillStyle = on ? C.mus : C.floor;
+        cx.beginPath(); cx.arc(px+T/2, py+T/2, T*.3, 0, Math.PI * 2); cx.fill(); cx.stroke();
+        cx.fillStyle = C.ink;
+        cx.font = '700 ' + (T*.3) + 'px Courier Prime,monospace';
+        cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText(c.toUpperCase(), px+T/2, py+T/2+1);
+
+      } else if (c >= 'A' && c <= 'Z' && c !== 'E') {
+        // Door
+        const open = act.has(c.toLowerCase());
+        if (open) {
+          cx.strokeStyle = C.ink; cx.setLineDash([4,4]); cx.lineWidth = 2;
+          cx.strokeRect(px+4, py+4, T-8, T-8); cx.setLineDash([]);
+        } else {
+          cx.fillStyle = C.mus; cx.fillRect(px+2, py+2, T-4, T-4);
+          cx.strokeStyle = C.ink; cx.lineWidth = 3;
+          cx.save(); cx.beginPath(); cx.rect(px+2, py+2, T-4, T-4); cx.clip();
+          cx.beginPath();
+          for (let i = -T; i < T; i += 10) { cx.moveTo(px+i, py+T); cx.lineTo(px+i+T, py); }
+          cx.stroke(); cx.restore();
+          cx.strokeRect(px+2, py+2, T-4, T-4);
+          cx.fillStyle = C.ink;
+          cx.fillRect(px+T/2-T*.17, py+T/2-T*.17, T*.34, T*.34);
+          cx.fillStyle = C.mus;
+          cx.font = '700 ' + (T*.32) + 'px Courier Prime,monospace';
+          cx.textAlign = 'center'; cx.textBaseline = 'middle';
+          cx.fillText(c, px+T/2, py+T/2+1);
+        }
+
+      } else if (c === 'E') {
+        // Exit
+        const locked = LV[lv].boss && enemies.some(e => !e.dead);
+        cx.strokeStyle = locked ? C.blood : C.olv;
+        cx.lineWidth = 3;
+        cx.strokeRect(px+5, py+5, T-10, T-10);
+        cx.strokeRect(px+11, py+11, T-22, T-22);
+        if (locked) {
+          cx.beginPath();
+          cx.moveTo(px+5, py+5); cx.lineTo(px+T-5, py+T-5);
+          cx.moveTo(px+T-5, py+5); cx.lineTo(px+5, py+T-5);
+          cx.stroke();
+        }
+        // Label
+        cx.fillStyle = locked ? C.blood : C.olv;
+        cx.font = '700 ' + (T*.22) + 'px Courier Prime,monospace';
+        cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText('EXIT', px+T/2, py+T/2);
+      }
+    }
+  }
+
+  // Start marker (dashed outline)
+  cx.strokeStyle = C.ink; cx.lineWidth = 2; cx.setLineDash([3,3]);
+  cx.strokeRect(start.x*T+6, start.y*T+6, T-12, T-12);
+  cx.setLineDash([]);
+
+  // Enemies (red diamonds)
+  enemies.forEach(e => {
+    if (e.dead) return;
+    const p = ePos(e, t);
+    const ex = p.x*T + T/2, ey = p.y*T + T/2, r = T*.36;
+    cx.fillStyle = C.blood; cx.strokeStyle = C.ink; cx.lineWidth = 3;
+    cx.beginPath();
+    cx.moveTo(ex, ey-r); cx.lineTo(ex+r, ey);
+    cx.lineTo(ex, ey+r); cx.lineTo(ex-r, ey);
+    cx.closePath(); cx.fill(); cx.stroke();
+    if (e.tag) {
+      cx.fillStyle = C.paper;
+      cx.font = '700 ' + (T*.26) + 'px Courier Prime,monospace';
+      cx.textAlign = 'center'; cx.textBaseline = 'middle';
+      cx.fillText(e.tag, ex, ey+1);
+    }
+  });
+
+  // Ghosts (olive squares)
+  ghosts.forEach((g, i) => {
+    const r = gPos(g, t), gx = r.x*T, gy = r.y*T;
+    cx.fillStyle = C.olv; cx.fillRect(gx+5, gy+5, T-10, T-10);
+    cx.strokeStyle = C.ink; cx.lineWidth = 3;
+    cx.setLineDash([5,3]); cx.strokeRect(gx+5, gy+5, T-10, T-10); cx.setLineDash([]);
+    cx.fillStyle = C.paper;
+    cx.font = '700 ' + (T*.3) + 'px Courier Prime,monospace';
+    cx.textAlign = 'center'; cx.textBaseline = 'middle';
+    cx.fillText(i+1, gx+T/2, gy+T/2+1);
+    // Ghost strike indicator
+    if (r.s && t < g.length) {
+      cx.fillStyle = C.ink;
+      cx.fillRect(gx+T/2+r.f[0]*T*.45-4, gy+T/2+r.f[1]*T*.45-4, 8, 8);
+    }
+  });
+
+  // Player (orange square)
+  const px = pos.x*T, py2 = pos.y*T;
+  cx.fillStyle = flash > 0 ? C.blood : C.org;
+  cx.fillRect(px+5, py2+5, T-10, T-10);
+  cx.strokeStyle = C.ink; cx.lineWidth = 3;
+  cx.strokeRect(px+5, py2+5, T-10, T-10);
+  // Direction dot
+  cx.fillStyle = C.ink;
+  cx.fillRect(px+T/2+face[0]*T*.28-4, py2+T/2+face[1]*T*.28-4, 8, 8);
+  // Strike effect
+  if (cd === 2 || cd === 3) {
+    cx.fillStyle = C.ink;
+    cx.fillRect(px+T/2+face[0]*T*.6-6, py2+T/2+face[1]*T*.6-6, 12, 12);
+  }
+  if (flash > 0) flash--;
+
+  // Visual overlay when not yet started or paused
+  if ((!started || paused) && !won) {
+    cx.fillStyle = 'rgba(31,22,16,0.45)';
+    cx.fillRect(0, 0, W, H);
+    cx.fillStyle = '#e6d3a6';
+    cx.font = 'bold ' + Math.max(14, T * 0.5) + 'px Courier Prime,monospace';
+    cx.textAlign = 'center'; cx.textBaseline = 'middle';
+    cx.fillText(paused ? '— PAUSED —' : '▶ PRESS A KEY TO START', W / 2, H / 2);
+  }
+}
+
+// ─── Main loop ────────────────────────────────────────────────────────────────
+function frame(ts) {
+  // FIX: cap dt to prevent multi-tick bursts after tab switch / system sleep
+  if (!last) last = ts;
+  const dt = Math.min(ts - last, MAX_DT);
+  last = ts;
+
+  if (started && !won && !paused) {
+    acc += dt;
+    while (acc >= TICK) {
+      acc -= TICK;
+      tick();
+      if (!started) break; // die() or commit() may set started=false
+    }
+  } else {
+    acc = 0;
+  }
+
+  draw();
+  requestAnimationFrame(frame);
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+loadLevel(0);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
