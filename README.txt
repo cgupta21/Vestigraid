@@ -4,7 +4,11 @@ Every move leaves a mark. Every mark fights back.
 PROJECT STRUCTURE:
 Vestigraid/
 ├── index.html        # Main HTML shell and UI overlays
+├── favicon.ico       # Standard browser favicon
+├── og-image.png      # Open Graph social sharing image
+├── site.webmanifest  # Progressive web app manifest
 ├── README.txt        # Game documentation and release instructions
+├── brand/            # Vector and raster brand identity assets (logos, icons)
 ├── css/
 │   └── style.css     # Responsive design, terminal theme, animations, and controls
 ├── js/

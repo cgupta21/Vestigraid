@@ -73,3 +73,4 @@ export function updateTimeAccumulator(ts, isRunning, onTick) {
     acc = 0;
   }
 }
+

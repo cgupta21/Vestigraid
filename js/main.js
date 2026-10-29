@@ -238,7 +238,8 @@ export function loadLevelNext() {
 export function showOverlay(header, body, canPlayAgain) {
   const ovEl = $('ov');
   ovEl.style.display = 'flex';
-  ovEl.innerHTML = '<h2>' + header + '</h2><p>' + body + '</p>' +
+  ovEl.innerHTML = (canPlayAgain ? '<img src="brand/icon.svg" alt="Vestigraid" class="ov-icon">' : '') +
+    '<h2>' + header + '</h2><p>' + body + '</p>' +
     (canPlayAgain ? '<button class="btn" id="ag">Play again</button>' : '');
   if (canPlayAgain) {
     $('ag').onclick = () => {
@@ -400,3 +401,4 @@ if (document.readyState === 'loading') {
 } else {
   initGame();
 }
+

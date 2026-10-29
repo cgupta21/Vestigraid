@@ -104,3 +104,4 @@ export function movePlayer(dir, grid, cols, rows, actPlates, ghosts, tt, getGhos
   pos.y = Math.max(0, Math.min(rows - 1, pos.y));
   return { moved: false, pos };
 }
+

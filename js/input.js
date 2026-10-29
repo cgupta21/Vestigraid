@@ -109,3 +109,4 @@ export function initInput({
     b.addEventListener('pointercancel', release);
   });
 }
+

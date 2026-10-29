@@ -77,3 +77,4 @@ export function parseLevelMap(levelIndex) {
 
   return { levelDef, grid, rows, cols, start };
 }
+

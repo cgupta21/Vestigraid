@@ -88,3 +88,4 @@ export function checkEnemyCollision(playerPos, prevPlayerPos, tt) {
 export function areAllEnemiesDead() {
   return !enemies.some(e => !e.dead);
 }
+

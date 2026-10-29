@@ -4,6 +4,8 @@
  */
 
 const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 let testResults = [];
@@ -400,6 +402,105 @@ async function runTests() {
     let expireInfo = await evaluate('({ t, loops, msg: document.getElementById("msg").textContent })');
     assert(expireInfo.t === 0 && expireInfo.loops === loopsBeforeExpire + 1, 'Auto-commit triggers at time limit expiration', `loops=${expireInfo.loops}, msg="${expireInfo.msg}"`);
     assert(expireInfo.msg.includes('Time ran out'), 'Auto-commit displays "Time ran out" message', `msg="${expireInfo.msg}"`);
+
+    console.log('\n=== TEST 10: Brand Assets Integration & Responsiveness ===');
+    // 1. Verify all 14 brand assets exist on disk with positive sizes
+    const expectedAssets = [
+      'brand/logo.svg',
+      'brand/logo-on-dark.svg',
+      'brand/logo.png',
+      'brand/logo-on-dark.png',
+      'brand/icon.svg',
+      'brand/icon-maskable.svg',
+      'brand/icon-192.png',
+      'brand/icon-512.png',
+      'brand/icon-maskable-512.png',
+      'brand/favicon-32.png',
+      'brand/apple-touch-icon.png',
+      'favicon.ico',
+      'site.webmanifest',
+      'og-image.png'
+    ];
+    for (const asset of expectedAssets) {
+      const fullPath = path.join(__dirname, '..', asset);
+      const exists = fs.existsSync(fullPath);
+      const size = exists ? fs.statSync(fullPath).size : 0;
+      assert(exists && size > 0, `Asset ${asset} exists on disk (${size} bytes)`);
+    }
+
+    // 2. Verify logo element in DOM
+    const logoInfo = await evaluate(`(() => {
+      const img = document.querySelector('header h1 img.brand-logo');
+      if (!img) return null;
+      return {
+        src: img.getAttribute('src'),
+        alt: img.getAttribute('alt'),
+        complete: img.complete,
+        naturalWidth: img.naturalWidth,
+        naturalHeight: img.naturalHeight,
+        width: img.offsetWidth,
+        height: img.offsetHeight
+      };
+    })()`);
+    assert(logoInfo && logoInfo.src === 'brand/logo-on-dark.svg', 'Logo uses brand/logo-on-dark.svg in header');
+    assert(logoInfo && logoInfo.complete && logoInfo.naturalWidth > 0, `Logo loaded successfully without error (${logoInfo?.naturalWidth}x${logoInfo?.naturalHeight})`);
+    assert(logoInfo && logoInfo.alt === 'Vestigraid', 'Logo has accessible alt attribute ("Vestigraid")');
+
+    // 3. Verify favicon, manifest and Open Graph metadata in head
+    const headMeta = await evaluate(`(() => {
+      return {
+        svgIcon: document.querySelector('link[rel="icon"][type="image/svg+xml"]')?.getAttribute('href'),
+        pngIcon: document.querySelector('link[rel="icon"][sizes="32x32"]')?.getAttribute('href'),
+        appleIcon: document.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href'),
+        shortcutIcon: document.querySelector('link[rel="shortcut icon"]')?.getAttribute('href'),
+        manifest: document.querySelector('link[rel="manifest"]')?.getAttribute('href'),
+        ogImage: document.querySelector('meta[property="og:image"]')?.getAttribute('content'),
+        ogTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content')
+      };
+    })()`);
+    assert(headMeta.svgIcon === 'brand/icon.svg', 'SVG icon favicon referenced in head');
+    assert(headMeta.pngIcon === 'brand/favicon-32.png', 'PNG 32x32 favicon referenced in head');
+    assert(headMeta.appleIcon === 'brand/apple-touch-icon.png', 'Apple touch icon referenced in head');
+    assert(headMeta.shortcutIcon === 'favicon.ico', 'Shortcut favicon.ico referenced in head');
+    assert(headMeta.manifest === 'site.webmanifest', 'Web app manifest referenced in head');
+    assert(headMeta.ogImage === 'og-image.png', 'Open Graph social image referenced in head');
+
+    // 4. Verify desktop & mobile logo responsiveness and no overlap with stage/canvas/controls
+    const desktopLayout = await evaluate(`(() => {
+      const logo = document.querySelector('header h1 img.brand-logo');
+      const stage = document.querySelector('.stage');
+      const logoRect = logo.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      return {
+        logoWidth: logoRect.width,
+        logoHeight: logoRect.height,
+        logoBottom: logoRect.bottom,
+        stageTop: stageRect.top,
+        overlap: !(logoRect.bottom <= stageRect.top)
+      };
+    })()`);
+    assert(!desktopLayout.overlap, `[Desktop] Logo does not overlap stage or controls (bottom: ${Math.round(desktopLayout.logoBottom)}px <= stage top: ${Math.round(desktopLayout.stageTop)}px)`);
+    assert(desktopLayout.logoWidth > 0 && desktopLayout.logoHeight > 0, `[Desktop] Logo is sharp and proportionate (${Math.round(desktopLayout.logoWidth)}x${Math.round(desktopLayout.logoHeight)}px)`);
+
+    // Mobile layout test (375x667)
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await new Promise(r => setTimeout(r, 100));
+    const mobileLayout = await evaluate(`(() => {
+      const logo = document.querySelector('header h1 img.brand-logo');
+      const stage = document.querySelector('.stage');
+      const logoRect = logo.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      return {
+        logoWidth: logoRect.width,
+        logoHeight: logoRect.height,
+        logoBottom: logoRect.bottom,
+        stageTop: stageRect.top,
+        overlap: !(logoRect.bottom <= stageRect.top)
+      };
+    })()`);
+    assert(!mobileLayout.overlap, `[Mobile] Logo does not overlap stage or controls (bottom: ${Math.round(mobileLayout.logoBottom)}px <= stage top: ${Math.round(mobileLayout.stageTop)}px)`);
+    assert(mobileLayout.logoWidth > 0 && mobileLayout.logoHeight > 0 && mobileLayout.logoWidth <= 375, `[Mobile] Logo scaled proportionately (${Math.round(mobileLayout.logoWidth)}x${Math.round(mobileLayout.logoHeight)}px)`);
+    await send('Emulation.clearDeviceMetricsOverride');
 
     proc.kill();
 

@@ -76,3 +76,4 @@ export function getHistory() {
 export function resetHistory() {
   hist = [];
 }
+

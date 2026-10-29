@@ -291,3 +291,4 @@ export function updateUI({ loops, t, maxTicks, tickMs, ghosts, domElements }) {
       : '<em>none yet</em>';
   }
 }
+
