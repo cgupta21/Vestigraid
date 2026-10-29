@@ -22,6 +22,7 @@ async function runTests() {
   const port = 9300 + Math.floor(Math.random() * 500);
   const proc = spawn(chromePath, [
     '--headless=new',
+    '--allow-file-access-from-files',
     `--remote-debugging-port=${port}`,
     'file:///C:/CG_PROJECT/Vestigraid/index.html'
   ]);
