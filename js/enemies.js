@@ -6,8 +6,8 @@ export function initEnemies(levelDef, grid, rows, cols, hist) {
   enemies = [];
 
   if (levelDef.boss && !levelDef.enemies) {
-    const sp = [[9, 1], [10, 3], [8, 5]];
-    for (let k = 0; k < 3; k++) {
+    const sp = [[9, 1], [10, 3]];
+    for (let k = 0; k < sp.length; k++) {
       const h = (hist[k] && hist[k].length > 1) ? hist[k] : [{ x: 0, y: 0 }, { x: 1, y: 0 }];
       let cur = { x: sp[k][0], y: sp[k][1] };
       const path = [[cur.x, cur.y]];

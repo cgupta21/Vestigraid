@@ -18,6 +18,7 @@ export const LV = [
     n: 'Two Keys',
     timeLimit: 40,
     time: 40,
+    requiredDoor: 'B',
     hint: 'Two plates (a, b), two doors (A, B). Loop 1: leave a shadow on plate a. Loop 2: use the open door A to reach plate b, then leave another shadow. Loop 3: both shadows hold the doors — walk to the exit.',
     map: [
       '############',
@@ -46,7 +47,7 @@ export const LV = [
     boss: true,
     timeLimit: 70,
     time: 70,
-    hint: 'Your old runs are back, wearing red. All three must fall in the same run to open the exit. Use shadows to strike multiple enemies at once.',
+    hint: 'Your old runs are back, wearing red. Both must fall in the same run to open the exit. Use shadows to strike multiple enemies at once.',
     map: [
       '############',
       '#S.........#',

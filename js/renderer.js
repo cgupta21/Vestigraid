@@ -59,6 +59,7 @@ export function renderGame({
   getGhostPosFn,
   t,
   isBoss,
+  requiredDoor,
   started,
   paused,
   won
@@ -153,7 +154,9 @@ export function renderGame({
 
       } else if (c === 'E') {
         // Exit
-        const locked = isBoss && enemies.some(e => !e.dead);
+        const bossLocked = Boolean(isBoss && enemies.some(e => !e.dead));
+        const doorLocked = Boolean(requiredDoor && !actPlates.has(requiredDoor.toLowerCase()));
+        const locked = bossLocked || doorLocked;
         cx.strokeStyle = locked ? C.blood : C.olv;
         cx.lineWidth = 3;
         cx.strokeRect(px + 5, py + 5, T - 10, T - 10);

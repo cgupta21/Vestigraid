@@ -181,8 +181,11 @@ export function tick() {
   // Victory check
   const playerPos = getPlayerPos();
   if (grid[playerPos.y] && grid[playerPos.y][playerPos.x] === 'E') {
-    if (LV[lv].boss && !areAllEnemiesDead()) {
+    const levelDef = LV[lv];
+    if (levelDef.boss && !areAllEnemiesDead()) {
       say('Kill all enemies to unlock the exit!');
+    } else if (levelDef.requiredDoor && !currentPlates.has(levelDef.requiredDoor.toLowerCase())) {
+      say('Door ' + levelDef.requiredDoor + ' is locked — open it to unlock the exit!');
     } else {
       win();
       return;
@@ -286,6 +289,7 @@ export function frame(ts) {
     getGhostPosFn: getGhostPos,
     t: getTick(),
     isBoss: Boolean(LV[lv].boss),
+    requiredDoor: LV[lv].requiredDoor,
     started,
     paused,
     won

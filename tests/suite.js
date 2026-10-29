@@ -221,14 +221,45 @@ async function runTests() {
     let lvAfterC1 = await evaluate('lv');
     assert(lvAfterC1 === 1, 'Case 01 completed successfully, advanced to Case 02', `lv=${lvAfterC1}`);
 
-    // Case 02
+    // Case 02: Verification of Plate/Door Validation and Full Puzzle Solve
+    await new Promise(r => setTimeout(r, 100));
+    // Test Premature Exit: in Loop 1, leave shadow on plate a (2,2)
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,2)
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // In Loop 2, pass Door A but do NOT hold plate b; walk straight to Exit (10,3)
+    await tap(' ', 'Space'); // wait for ghost to clear doorway
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowDown', 'ArrowDown');  // (3,2)
+    await tap('ArrowRight', 'ArrowRight'); // (4,2, Door A)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2)
+    await tap('ArrowUp', 'ArrowUp');      // (5,1)
+    await tap('ArrowRight', 'ArrowRight'); // (6,1)
+    await tap('ArrowRight', 'ArrowRight'); // (7,1) - step off plate b
+    await tap('ArrowRight', 'ArrowRight'); // (8,1)
+    await tap('ArrowRight', 'ArrowRight'); // (9,1)
+    await tap('ArrowRight', 'ArrowRight'); // (10,1)
+    await tap('ArrowDown', 'ArrowDown');  // (10,2)
+    await tap('ArrowDown', 'ArrowDown');  // (10,3) -> Reached Exit E while Door B is locked!
+    await new Promise(r => setTimeout(r, 100));
+
+    let lvPrematureC2 = await evaluate('lv');
+    let msgPrematureC2 = await evaluate('document.getElementById("msg").textContent');
+    assert(lvPrematureC2 === 1, 'Case 02 does NOT advance when reaching exit while Door B is locked', `lv=${lvPrematureC2}`);
+    assert(msgPrematureC2.includes('Door B is locked'), 'Case 02 displays locked door feedback on exit attempt', `msg="${msgPrematureC2}"`);
+
+    // Reset Case 02 and perform the full intended solution
+    await evaluate('loadLevel(1)');
     await new Promise(r => setTimeout(r, 100));
     // Loop 1: to plate a (2,2)
     await tap('ArrowDown', 'ArrowDown'); // (1,2)
     await tap('ArrowRight', 'ArrowRight'); // (2,2)
     await sendKeyRaw('r', 'KeyR');
-    // Loop 2: to plate b (6,1)
     await new Promise(r => setTimeout(r, 100));
+    // Loop 2: to plate b (6,1)
     await tap(' ', 'Space'); // wait
     await tap('ArrowRight', 'ArrowRight'); // (2,1)
     await tap('ArrowRight', 'ArrowRight'); // (3,1)
@@ -238,8 +269,8 @@ async function runTests() {
     await tap('ArrowUp', 'ArrowUp');      // (5,1)
     await tap('ArrowRight', 'ArrowRight'); // (6,1, on plate b)
     await sendKeyRaw('r', 'KeyR');
-    // Loop 3: to exit (10,3)
     await new Promise(r => setTimeout(r, 100));
+    // Loop 3: both shadows hold doors — to exit (10,3) through Door B (7,3)
     await tap(' ', 'Space'); // wait
     await tap(' ', 'Space'); // wait
     await tap('ArrowRight', 'ArrowRight'); // (2,1)
@@ -255,7 +286,7 @@ async function runTests() {
     await tap('ArrowRight', 'ArrowRight'); // (10,3) -> E
     await new Promise(r => setTimeout(r, 200));
     let lvAfterC2 = await evaluate('lv');
-    assert(lvAfterC2 === 2, 'Case 02 completed successfully, advanced to Case 03', `lv=${lvAfterC2}`);
+    assert(lvAfterC2 === 2, 'Case 02 completed successfully after full puzzle solve, advanced to Case 03', `lv=${lvAfterC2}`);
 
     // Case 03
     await new Promise(r => setTimeout(r, 100));
@@ -280,7 +311,28 @@ async function runTests() {
     let lvAfterC3 = await evaluate('lv');
     assert(lvAfterC3 === 3, 'Case 03 completed successfully, advanced to Case 04', `lv=${lvAfterC3}`);
 
-    console.log('\n=== TEST 8: Case 04 Defeat All 3 Enemies & Victory Screen ===');
+    console.log('\n=== TEST 8: Case 04 Defeat Both Enemies & Victory Screen ===');
+    await evaluate('hist = []; loadLevel(3)');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Verify Case 04 enemy configuration: exactly two hostile echoes, enemy 03 removed
+    let initialC4Enemies = await evaluate('enemies.map(e => ({ tag: e.tag, dead: e.dead }))');
+    assert(initialC4Enemies.length === 2, 'Exactly two hostile echoes spawn in Case 04', `count=${initialC4Enemies.length}`);
+    assert(!initialC4Enemies.some(e => e.tag === '03'), 'Enemy 03 no longer appears in Case 04');
+    assert(initialC4Enemies.some(e => e.tag === '01') && initialC4Enemies.some(e => e.tag === '02'), 'Case 04 contains enemies 01 and 02');
+
+    // Test premature exit reaching before defeating all enemies in Case 04
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowDown', 'ArrowDown'); // (1,3)
+    await tap('ArrowDown', 'ArrowDown'); // (1,4)
+    await tap('ArrowDown', 'ArrowDown'); // (1,5)
+    for (let i = 0; i < 9; i++) await tap('ArrowRight', 'ArrowRight'); // -> (10,5) E
+    let lvPrematureC4 = await evaluate('lv');
+    let msgPrematureC4 = await evaluate('document.getElementById("msg").textContent');
+    assert(lvPrematureC4 === 3, 'Case 04 does not advance when reaching exit while enemies are alive');
+    assert(msgPrematureC4.includes('Kill all enemies'), 'Case 04 prompts to kill all enemies at locked exit');
+
+    // Reset Case 04 for actual combat solve
     await evaluate('hist = []; loadLevel(3)');
     await new Promise(r => setTimeout(r, 100));
 
@@ -290,36 +342,25 @@ async function runTests() {
     await sendKeyRaw('r', 'KeyR');
     await new Promise(r => setTimeout(r, 100));
 
-    // Loop 2: Walk to (9,3) and strike Enemy 02 at t=11
-    await tap('ArrowDown', 'ArrowDown');
-    await tap('ArrowDown', 'ArrowDown');
-    for (let i = 0; i < 8; i++) await tap('ArrowRight', 'ArrowRight');
-    await tap(' ', 'Space');
-    await sendKeyRaw('r', 'KeyR');
-    await new Promise(r => setTimeout(r, 100));
-
-    // Loop 3: Wait 1 tick, walk to (7,5), strike Enemy 03 at t=12, walk to exit (10,5)
-    await tap(' ', 'Space'); // t=1 wait
+    // Loop 2: Walk to (9,3), strike Enemy 02 at t=11, then walk to exit (10,5)
     await tap('ArrowDown', 'ArrowDown'); // (1,2)
     await tap('ArrowDown', 'ArrowDown'); // (1,3)
-    await tap('ArrowDown', 'ArrowDown'); // (1,4)
-    await tap('ArrowDown', 'ArrowDown'); // (1,5)
-    for (let i = 0; i < 6; i++) await tap('ArrowRight', 'ArrowRight');
-    await tap(' ', 'Space'); // t=12 strike Enemy 03
+    for (let i = 0; i < 8; i++) await tap('ArrowRight', 'ArrowRight'); // (9,3)
+    await tap(' ', 'Space'); // t=11 strike Enemy 02
 
     // Check enemies status
     let enemiesStatus = await evaluate('enemies.map(e => ({ tag: e.tag, dead: e.dead }))');
     console.log('Case 04 enemies status after strikes:', enemiesStatus);
-    assert(enemiesStatus.every(e => e.dead), 'All 3 Case 04 enemies defeated');
+    assert(enemiesStatus.length === 2 && enemiesStatus.every(e => e.dead), 'Both Case 04 enemies defeated');
 
     // Walk to Exit (10,5)
-    await tap('ArrowRight', 'ArrowRight'); // (8,5)
-    await tap('ArrowRight', 'ArrowRight'); // (9,5)
+    await tap('ArrowDown', 'ArrowDown'); // (9,4)
+    await tap('ArrowDown', 'ArrowDown'); // (9,5)
     await tap('ArrowRight', 'ArrowRight'); // (10,5) -> Exit!
 
     await new Promise(r => setTimeout(r, 200));
     let lvAfterC4 = await evaluate('lv');
-    assert(lvAfterC4 === 4, 'Case 04 completed successfully, advanced to Case 05', `lv=${lvAfterC4}`);
+    assert(lvAfterC4 === 4, 'Case 04 completed successfully after defeating both enemies, advanced to Case 05', `lv=${lvAfterC4}`);
 
     console.log('\n=== TEST 8B: Case 05 ("The Relay") Full Solve ===');
     await evaluate('hist = []; loadLevel(4)');
