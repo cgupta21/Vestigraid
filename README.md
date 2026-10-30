@@ -30,7 +30,7 @@
   <img src="https://img.shields.io/badge/JavaScript-ES2022%20Modules-F7DF1E?logo=javascript&logoColor=black" alt="JavaScript ES2022">
   <img src="https://img.shields.io/badge/HTML5-Canvas-E34F26?logo=html5&logoColor=white" alt="HTML5 Canvas">
   <img src="https://img.shields.io/badge/CSS3-Modern%20Grid%20%26%20Flex-1572B6?logo=css3&logoColor=white" alt="CSS3">
-  <img src="https://img.shields.io/badge/Tests-84%20Passing-brightgreen?logo=googlechrome&logoColor=white" alt="Tests 84 Passing">
+  <img src="https://img.shields.io/badge/Tests-90%20Passing-brightgreen?logo=googlechrome&logoColor=white" alt="Tests 90 Passing">
   <img src="https://img.shields.io/badge/Cases-8%20Playable-orange?logo=target&logoColor=white" alt="8 Playable Cases">
   <a href="https://vestigraid.netlify.app/"><img src="https://img.shields.io/badge/Demo-vestigraid.netlify.app-00C7B7?logo=netlify&logoColor=white" alt="Live Demo"></a>
   <img src="https://img.shields.io/badge/License-Not%20Specified-lightgrey" alt="License">
@@ -77,7 +77,7 @@ Experience Vestigraid directly in your web browser with zero setup or installati
   - **Case 01 — Hold the Door** (*30 seconds / 214 ticks*): Single pressure plate and security door. Teaches loop commitment and shadow door-holding mechanics.
   - **Case 02 — Two Keys** (*40 seconds / 286 ticks*): Multi-stage puzzle requiring chained loops to activate plates `a` and `b` in sequence to open doors `A` and `B`.
   - **Case 03 — The Sentry** (*50 seconds / 357 ticks*): Introduces real-time enemy patrol routes across waypoint tracks. Requires precise timing to cross the sentry lane safely.
-  - **Case 04 — The Team** (*70 seconds / 500 ticks*): Boss puzzle. Your past loop trajectories are transformed into two red hostile echoes that patrol and hunt. Both must be destroyed in the same loop before the exit unlock triggers.
+  - **Case 04 — The Team** (*70 seconds / 500 ticks*): Boss puzzle. Two rogue sentinels patrol the sector corridors. Both must be destroyed in the same loop before the exit unlock triggers.
   - **Case 05 — The Relay** (*60 seconds / 429 ticks*): Triple-chamber security relay. Chained shadows must systematically trigger floor switches `a`, `b`, and `c` to unlock blast gates `A`, `B`, and `C` in sequence.
   - **Case 06 — Crossfire** (*65 seconds / 464 ticks*): Sentry coordination puzzle featuring two intersecting sentry patrol lanes (`01` and `02`) alongside blast door `A`. Requires precise timing and combat strikes to slip past the crossfire.
   - **Case 07 — The Split** (*75 seconds / 536 ticks*): Dual-branch sector requiring simultaneous coordination across upper and lower wings to unlock gates `A`, `B`, and final gate `C`.
@@ -217,7 +217,7 @@ node tests/suite.js
 
 ### Test Coverage Highlights
 
-The suite performs **84 automated assertions** across 10 functional test categories:
+The suite performs **90 automated assertions** across 10 functional test categories:
 
 1. **Canvas Dimensions**: Verifies correct pixel scaling and aspect ratios across all 8 cases.
 2. **Boundary Collision & Clamping**: Verifies that pressing directions into exterior bounds or solid walls prevents illegal tile escapes and never triggers false deaths.
@@ -227,7 +227,7 @@ The suite performs **84 automated assertions** across 10 functional test categor
 6. **State Transitions**: Validates loop starts, pause/unpause idempotency (`P`), and full-case resets (`Z`).
 7. **Complete Gameplay Walkthrough**: Automatically simulates puzzle solutions for Cases 01, 02, and 03.
 8. **Boss & Advanced Case Solves**: Simulates multi-loop solutions and verified completions for:
-   - **Case 04**: Defeat of both rogue echoes advancing to Case 05.
+   - **Case 04**: Defeat of both rogue sentinels advancing to Case 05.
    - **Case 05**: 4-loop relay puzzle solution through gates `A`, `B`, and `C`.
    - **Case 06**: 2-loop sentry strike and gate escape.
    - **Case 07**: 4-loop dual-branch coordination and final exit run.
@@ -276,7 +276,7 @@ Contributions, bug reports, and suggestions are welcome!
    git checkout -b feature/new-case
    ```
 3. **Follow the code style**: Keep JavaScript modular, avoid introducing heavy build dependencies, and preserve the terminal-kraft visual aesthetic.
-4. **Run the regression suite**: Ensure all 84 tests pass before submitting changes:
+4. **Run the regression suite**: Ensure all 90 tests pass before submitting changes:
    ```bash
    node tests/suite.js
    ```

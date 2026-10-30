@@ -47,7 +47,7 @@ export const LV = [
     boss: true,
     timeLimit: 70,
     time: 70,
-    hint: 'Your old runs are back, wearing red. Both must fall in the same run to open the exit. Use shadows to strike multiple enemies at once.',
+    hint: 'Two rogue sentinels guard the sector corridors. Both must fall in the same run to open the exit. Use a shadow to eliminate one while you strike the other.',
     map: [
       '############',
       '#S.........#',
@@ -56,6 +56,10 @@ export const LV = [
       '#..##..##..#',
       '#.........E#',
       '############'
+    ],
+    enemies: [
+      { path: [[7, 1], [8, 1], [9, 1]], speed: 2, tag: '01' },
+      { path: [[5, 3], [6, 3], [7, 3]], speed: 2, tag: '02' }
     ]
   },
   {

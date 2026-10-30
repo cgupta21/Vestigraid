@@ -311,17 +311,37 @@ async function runTests() {
     let lvAfterC3 = await evaluate('lv');
     assert(lvAfterC3 === 3, 'Case 03 completed successfully, advanced to Case 04', `lv=${lvAfterC3}`);
 
-    console.log('\n=== TEST 8: Case 04 Defeat Both Enemies & Victory Screen ===');
+    console.log('\n=== TEST 8: Case 04 Gameplay Audit, Combat, Shadow Replay & Exit Verification ===');
     await evaluate('hist = []; loadLevel(3)');
     await new Promise(r => setTimeout(r, 100));
 
-    // Verify Case 04 enemy configuration: exactly two hostile echoes, enemy 03 removed
+    // 1. Verify Case 04 enemy configuration: exactly two hostile sentinels, enemy 03 removed
     let initialC4Enemies = await evaluate('enemies.map(e => ({ tag: e.tag, dead: e.dead }))');
-    assert(initialC4Enemies.length === 2, 'Exactly two hostile echoes spawn in Case 04', `count=${initialC4Enemies.length}`);
+    assert(initialC4Enemies.length === 2, 'Exactly two hostile sentinels spawn in Case 04', `count=${initialC4Enemies.length}`);
     assert(!initialC4Enemies.some(e => e.tag === '03'), 'Enemy 03 no longer appears in Case 04');
     assert(initialC4Enemies.some(e => e.tag === '01') && initialC4Enemies.some(e => e.tag === '02'), 'Case 04 contains enemies 01 and 02');
 
-    // Test premature exit reaching before defeating all enemies in Case 04
+    // 2. Validate enemy spawn coordinates and map validity
+    let spawnValid = await evaluate(`
+      enemies.every(e => {
+        let p = ePos(e, 0);
+        return p.x >= 1 && p.x < cols - 1 && p.y >= 1 && p.y < rows - 1 && solid(p.x, p.y) === false;
+      })
+    `);
+    assert(spawnValid === true, 'Enemy 01 and 02 spawn coordinates are inside playable grid and not on walls');
+
+    // 3. Validate enemy visibility within canvas bounds
+    let enemiesVisible = await evaluate(`
+      enemies.every(e => {
+        let p = ePos(e, 0);
+        let ex = p.x * 64 + 32;
+        let ey = p.y * 64 + 32;
+        return ex > 0 && ex < cv.width && ey > 0 && ey < cv.height;
+      })
+    `);
+    assert(enemiesVisible === true, 'Both enemies are positioned within visible canvas render boundaries');
+
+    // 4. Test premature exit reaching before defeating all enemies in Case 04
     await tap('ArrowDown', 'ArrowDown'); // (1,2)
     await tap('ArrowDown', 'ArrowDown'); // (1,3)
     await tap('ArrowDown', 'ArrowDown'); // (1,4)
@@ -332,31 +352,45 @@ async function runTests() {
     assert(lvPrematureC4 === 3, 'Case 04 does not advance when reaching exit while enemies are alive');
     assert(msgPrematureC4.includes('Kill all enemies'), 'Case 04 prompts to kill all enemies at locked exit');
 
-    // Reset Case 04 for actual combat solve
+    // 5. Reset Case 04 for actual full combat & shadow replay solve
     await evaluate('hist = []; loadLevel(3)');
     await new Promise(r => setTimeout(r, 100));
 
-    // Loop 1: Walk to (8,1) and strike Enemy 01 at t=8
-    for (let i = 0; i < 7; i++) await tap('ArrowRight', 'ArrowRight');
-    await tap(' ', 'Space');
+    // Loop 1: Walk right along row 1 to (7,1), strike Enemy 01 at (8,1) at t=7
+    for (let i = 0; i < 6; i++) await tap('ArrowRight', 'ArrowRight');
+    await tap(' ', 'Space'); // strike facing right at (8,1) at t=7
+    let e01Loop1Dead = await evaluate('enemies[0].dead');
+    assert(e01Loop1Dead === true, 'Attack direction and hit detection eliminates Enemy 01 in Loop 1');
+
+    // Commit Loop 1 to record shadow
     await sendKeyRaw('r', 'KeyR');
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, 150));
 
-    // Loop 2: Walk to (9,3), strike Enemy 02 at t=11, then walk to exit (10,5)
-    await tap('ArrowDown', 'ArrowDown'); // (1,2)
-    await tap('ArrowDown', 'ArrowDown'); // (1,3)
-    for (let i = 0; i < 8; i++) await tap('ArrowRight', 'ArrowRight'); // (9,3)
-    await tap(' ', 'Space'); // t=11 strike Enemy 02
+    // Loop 2: Shadow 1 replays walk & strike against Enemy 01.
+    // Player takes middle corridor: Down to row 3, Right to (5,3), strike Enemy 02 at (6,3) at t=7.
+    await tap('ArrowDown', 'ArrowDown'); // t=1 (1,2)
+    await tap('ArrowDown', 'ArrowDown'); // t=2 (1,3)
+    for (let i = 0; i < 4; i++) await tap('ArrowRight', 'ArrowRight'); // t=3:(2,3), t=4:(3,3), t=5:(4,3), t=6:(5,3)
 
-    // Check enemies status
+    // Strike right towards (6,3) at t=7
+    await tap(' ', 'Space'); // t=7
+
+    // Verify shadow strike replay and player strike results
     let enemiesStatus = await evaluate('enemies.map(e => ({ tag: e.tag, dead: e.dead }))');
-    console.log('Case 04 enemies status after strikes:', enemiesStatus);
-    assert(enemiesStatus.length === 2 && enemiesStatus.every(e => e.dead), 'Both Case 04 enemies defeated');
+    console.log('Case 04 enemies status after synchronized strikes at t=7:', enemiesStatus);
+    assert(enemiesStatus[0].dead === true, 'Shadow 1 replayed strike and eliminated Enemy 01');
+    assert(enemiesStatus[1].dead === true, 'Player strike eliminated Enemy 02');
+    assert(enemiesStatus.every(e => e.dead), 'Both Case 04 enemies defeated simultaneously in active run');
 
-    // Walk to Exit (10,5)
-    await tap('ArrowDown', 'ArrowDown'); // (9,4)
-    await tap('ArrowDown', 'ArrowDown'); // (9,5)
-    await tap('ArrowRight', 'ArrowRight'); // (10,5) -> Exit!
+    // 6. Verify timer sufficiency
+    let solveTick = await evaluate('t');
+    let maxT = await evaluate('Math.round((LV[lv].timeLimit * 1000) / 140)');
+    assert(solveTick < maxT * 0.25, 'Timer sufficiency confirmed (completed well within 70s limit)', `tick=${solveTick}/${maxT}`);
+
+    // 7. Walk to Exit (10,5)
+    await tap('ArrowDown', 'ArrowDown'); // t=8 (5,4)
+    await tap('ArrowDown', 'ArrowDown'); // t=9 (5,5)
+    for (let i = 0; i < 5; i++) await tap('ArrowRight', 'ArrowRight'); // (6,5), (7,5), (8,5), (9,5), (10,5) -> Exit!
 
     await new Promise(r => setTimeout(r, 200));
     let lvAfterC4 = await evaluate('lv');
