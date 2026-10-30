@@ -3,8 +3,8 @@
 export const LV = [
   {
     n: 'Hold the Door',
-    timeLimit: 10,
-    time: 10,
+    timeLimit: 6,
+    time: 6,
     requiredDoors: ['A'],
     hint: 'Walk to the plate (marked A), press R to leave your shadow there. Your shadow replays those moves and holds the door open while you walk through in the next loop.',
     map: [
@@ -17,8 +17,8 @@ export const LV = [
   },
   {
     n: 'Two Keys',
-    timeLimit: 12,
-    time: 12,
+    timeLimit: 7,
+    time: 7,
     requiredDoor: 'B',
     requiredDoors: ['A', 'B'],
     hint: 'Two plates (a, b), two doors (A, B). Loop 1: leave a shadow on plate a. Loop 2: use the open door A to reach plate b, then leave another shadow. Loop 3: both shadows hold the doors — walk to the exit.',
@@ -32,8 +32,8 @@ export const LV = [
   },
   {
     n: 'The Sentry',
-    timeLimit: 14,
-    time: 14,
+    timeLimit: 8,
+    time: 8,
     requiredDoors: ['A'],
     hint: 'Loop 1: leave a shadow on plate a. Loop 2: the door stays open — walk through, time your approach to pass x=8 when the sentry is NOT in row 2, and reach the exit.',
     map: [
@@ -48,8 +48,8 @@ export const LV = [
   {
     n: 'The Team',
     boss: true,
-    timeLimit: 18,
-    time: 18,
+    timeLimit: 10,
+    time: 10,
     hint: 'Two rogue sentinels guard the sector corridors. Both must fall in the same run to open the exit. Use a shadow to eliminate one while you strike the other.',
     map: [
       '############',
@@ -67,8 +67,8 @@ export const LV = [
   },
   {
     n: 'The Relay',
-    timeLimit: 14,
-    time: 14,
+    timeLimit: 8,
+    time: 8,
     requiredDoors: ['A', 'B', 'C'],
     hint: 'Three linked security chambers. Loop 1: hold plate a to open door A. Loop 2: hold plate b to open door B. Loop 3: hold plate c to open door C. Loop 4: traverse all three open doors to reach the exit.',
     map: [
@@ -81,8 +81,8 @@ export const LV = [
   },
   {
     n: 'Crossfire',
-    timeLimit: 18,
-    time: 18,
+    timeLimit: 9,
+    time: 9,
     requiredDoors: ['A'],
     hint: 'Two intersecting sentries patrol the sector. Strike or dodge Sentry 01 to reach plate a, then time your advance past Sentry 02 to reach the exit.',
     map: [
@@ -100,8 +100,8 @@ export const LV = [
   },
   {
     n: 'The Split',
-    timeLimit: 22,
-    time: 22,
+    timeLimit: 10,
+    time: 10,
     requiredDoors: ['C'],
     branchDoors: ['A', 'B'],
     hint: 'A branching sector. Loop 1: hold plate a to open upper branch A. Loop 2: enter branch A to hold plate b, opening lower branch B. Loop 3: enter branch B to hold plate c, opening gate C. Loop 4: take either branch to the exit.',
@@ -118,8 +118,8 @@ export const LV = [
   {
     n: 'The Last Loop',
     boss: true,
-    timeLimit: 26,
-    time: 26,
+    timeLimit: 13,
+    time: 13,
     requiredDoors: ['B'],
     hint: 'The master sector. Use shadows to unlock doors A and B while coordinating attacks against two elite sentinels. Both sentinels must fall before the final exit unlocks.',
     map: [

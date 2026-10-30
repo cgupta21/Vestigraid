@@ -4,7 +4,7 @@ export const TICK = 140; // ms per game tick
 export const MAX_DT = TICK * 3; // cap dt to prevent multi-tick bursts after tab switch
 
 let t = 0;
-let maxTicks = 71; // Default to Case 01 (10s)
+let maxTicks = 43; // Default to Case 01 (6s)
 let acc = 0;
 let last = 0;
 
@@ -25,7 +25,7 @@ export function setMaxTicks(val) {
 }
 
 export function initTimerForLevel(levelDef) {
-  const seconds = levelDef.timeLimit || levelDef.time || 10;
+  const seconds = levelDef.timeLimit || levelDef.time || 6;
   maxTicks = Math.round((seconds * 1000) / TICK);
   t = 0;
   acc = 0;

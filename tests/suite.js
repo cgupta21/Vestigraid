@@ -388,7 +388,7 @@ async function runTests() {
     // 6. Verify timer sufficiency
     let solveTick = await evaluate('t');
     let maxT = await evaluate('Math.round((LV[lv].timeLimit * 1000) / 140)');
-    assert(solveTick < maxT * 0.25, 'Timer sufficiency confirmed (completed well within 18s limit)', `tick=${solveTick}/${maxT}`);
+    assert(solveTick < maxT * 0.25, 'Timer sufficiency confirmed (completed well within 10s limit)', `tick=${solveTick}/${maxT}`);
 
     // 7. Walk to Exit (10,5)
     await tap('ArrowDown', 'ArrowDown'); // t=8 (5,4)
@@ -603,14 +603,14 @@ async function runTests() {
     console.log('\n=== TEST 9: Timer Balance, Pausing, State Transitions & Auto-Commit ===');
     // 1. Verify per-case timer values and tick computations across all 8 cases
     const expectedTimers = [
-      { lv: 0, s: 10, ticks: 71, name: 'Case 01' },
-      { lv: 1, s: 12, ticks: 86, name: 'Case 02' },
-      { lv: 2, s: 14, ticks: 100, name: 'Case 03' },
-      { lv: 3, s: 18, ticks: 129, name: 'Case 04' },
-      { lv: 4, s: 14, ticks: 100, name: 'Case 05' },
-      { lv: 5, s: 18, ticks: 129, name: 'Case 06' },
-      { lv: 6, s: 22, ticks: 157, name: 'Case 07' },
-      { lv: 7, s: 26, ticks: 186, name: 'Case 08' }
+      { lv: 0, s: 6, ticks: 43, name: 'Case 01' },
+      { lv: 1, s: 7, ticks: 50, name: 'Case 02' },
+      { lv: 2, s: 8, ticks: 57, name: 'Case 03' },
+      { lv: 3, s: 10, ticks: 71, name: 'Case 04' },
+      { lv: 4, s: 8, ticks: 57, name: 'Case 05' },
+      { lv: 5, s: 9, ticks: 64, name: 'Case 06' },
+      { lv: 6, s: 10, ticks: 71, name: 'Case 07' },
+      { lv: 7, s: 13, ticks: 93, name: 'Case 08' }
     ];
     for (const exp of expectedTimers) {
       await evaluate(`loadLevel(${exp.lv})`);
