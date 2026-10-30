@@ -1,6 +1,6 @@
 // ─── Main game coordinator and loop ──────────────────────────────────────────
 
-import { LV, parseLevelMap } from './levels.js';
+import { LV, parseLevelMap, canExitLevel } from './levels.js';
 import {
   TICK,
   getTick,
@@ -31,6 +31,7 @@ import {
   getRecording,
   getGhosts,
   getGhostPos,
+  getGhostPlates,
   commitShadowLoop,
   getActivePlates,
   executeGhostStrikes,
@@ -58,6 +59,15 @@ import {
   consumeInput,
   clearInput
 } from './input.js';
+import {
+  STORAGE_KEY,
+  loadProgress,
+  saveProgress,
+  markCaseCompleted,
+  isCaseUnlocked,
+  isCaseCompleted,
+  resetProgress
+} from './progress.js';
 
 // DOM selectors
 const $ = id => document.getElementById(id);
@@ -74,6 +84,7 @@ let started = false;
 let won = false;
 let paused = false;
 let flash = 0;
+let progress = loadProgress();
 
 function say(s) {
   const msgEl = $('msg');
@@ -96,7 +107,102 @@ function syncUI() {
   });
 }
 
-export function loadLevel(i) {
+// Case Selection Modal Management
+const caseModal = $('case-modal');
+const caseGrid = $('case-grid');
+const progressSummary = $('progress-summary');
+const resetConfirm = $('reset-confirm');
+
+export function isModalOpen() {
+  return Boolean(caseModal && caseModal.style.display !== 'none');
+}
+
+export function openCaseModal() {
+  if (!caseModal) return;
+  if (resetConfirm) resetConfirm.style.display = 'none';
+  renderCaseGrid();
+  caseModal.style.display = 'flex';
+}
+
+export function closeCaseModal() {
+  if (!caseModal) return;
+  caseModal.style.display = 'none';
+  if (resetConfirm) resetConfirm.style.display = 'none';
+}
+
+export function toggleCaseModal() {
+  if (isModalOpen()) {
+    closeCaseModal();
+  } else {
+    openCaseModal();
+  }
+}
+
+export function renderCaseGrid() {
+  if (!caseGrid) return;
+  caseGrid.innerHTML = '';
+
+  const completedCount = progress.completedCases ? progress.completedCases.length : 0;
+  const unlockedCount = (progress.highestUnlocked !== undefined ? progress.highestUnlocked : 0) + 1;
+  if (progressSummary) {
+    progressSummary.textContent = `${unlockedCount} of ${LV.length} Cases Unlocked (${completedCount} Solved)`;
+  }
+
+  LV.forEach((lvlDef, idx) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    const unlocked = isCaseUnlocked(idx, progress);
+    const completed = isCaseCompleted(idx, progress);
+    const isCurrent = idx === lv;
+
+    card.className = `case-card ${isCurrent ? 'current' : ''} ${unlocked ? 'unlocked' : 'locked'}`;
+    if (!unlocked) {
+      card.disabled = true;
+    }
+
+    let badgeHtml = '';
+    if (completed) {
+      badgeHtml = '<span class="case-badge badge-completed">COMPLETED ✓</span>';
+    } else if (unlocked) {
+      badgeHtml = '<span class="case-badge badge-unlocked">UNLOCKED</span>';
+    } else {
+      badgeHtml = '<span class="case-badge badge-locked">🔒 LOCKED</span>';
+    }
+
+    let infoText = '';
+    if (unlocked) {
+      infoText = `${lvlDef.timeLimit}s limit · ${lvlDef.hint}`;
+    } else {
+      infoText = `Classified — Complete Case ${String(idx).padStart(2, '0')} to unlock`;
+    }
+
+    card.innerHTML = `
+      <div class="case-card-top">
+        <span class="case-card-num">CASE ${String(idx + 1).padStart(2, '0')}</span>
+        ${badgeHtml}
+      </div>
+      <div class="case-card-title">${lvlDef.n}</div>
+      <div class="case-card-info">${infoText}</div>
+    `;
+
+    if (unlocked) {
+      card.addEventListener('click', () => {
+        closeCaseModal();
+        loadLevel(idx);
+      });
+    }
+
+    caseGrid.appendChild(card);
+  });
+}
+
+export function loadLevel(i, force = false) {
+  if (i < 0 || i >= LV.length) return false;
+  if (!force && !isCaseUnlocked(i, progress)) {
+    say('Case locked. Complete previous cases first.');
+    return false;
+  }
+
   lv = i;
   won = false;
 
@@ -123,6 +229,7 @@ export function loadLevel(i) {
   startRound();
   started = false;
   say('Press a move key to start the loop.');
+  return true;
 }
 
 export function startRound() {
@@ -181,11 +288,10 @@ export function tick() {
   // Victory check
   const playerPos = getPlayerPos();
   if (grid[playerPos.y] && grid[playerPos.y][playerPos.x] === 'E') {
-    const levelDef = LV[lv];
-    if (levelDef.boss && !areAllEnemiesDead()) {
-      say('Kill all enemies to unlock the exit!');
-    } else if (levelDef.requiredDoor && !currentPlates.has(levelDef.requiredDoor.toLowerCase())) {
-      say('Door ' + levelDef.requiredDoor + ' is locked — open it to unlock the exit!');
+    const shadowPlates = getGhostPlates(grid, getGhosts(), currentTick);
+    const exitStatus = canExitLevel(lv, currentPlates, getEnemies(), shadowPlates);
+    if (!exitStatus.canExit) {
+      say(exitStatus.message);
     } else {
       win();
       return;
@@ -224,6 +330,7 @@ export function commit(auto) {
 
 export function win() {
   saveLevelHistory(lv, getRecording());
+  progress = markCaseCompleted(lv);
   if (lv === LV.length - 1) {
     won = true;
     showOverlay('ALL CASES CLOSED', 'You completed all 8 sectors and broke the loop forever.<br>Loops on final case: ' + loops, true);
@@ -243,7 +350,7 @@ export function showOverlay(header, body, canPlayAgain) {
   ovEl.style.display = 'flex';
   ovEl.innerHTML = (canPlayAgain ? '<img src="brand/icon.svg" alt="Vestigraid" class="ov-icon">' : '') +
     '<h2>' + header + '</h2><p>' + body + '</p>' +
-    (canPlayAgain ? '<div class="ov-btns"><button class="btn" id="ag">Play again</button><button class="btn" id="re-last">Restart final case</button></div>' : '');
+    (canPlayAgain ? '<div class="ov-btns"><button class="btn" id="ag">Play again</button><button class="btn" id="ov-archive">Case Archive</button><button class="btn" id="re-last">Restart final case</button></div>' : '');
   if (canPlayAgain) {
     $('ag').onclick = () => {
       ovEl.style.display = 'none';
@@ -253,6 +360,13 @@ export function showOverlay(header, body, canPlayAgain) {
       paused = false;
       loadLevel(0);
     };
+    if ($('ov-archive')) {
+      $('ov-archive').onclick = () => {
+        ovEl.style.display = 'none';
+        won = false;
+        openCaseModal();
+      };
+    }
     if ($('re-last')) {
       $('re-last').onclick = () => {
         ovEl.style.display = 'none';
@@ -301,7 +415,6 @@ export function frame(ts) {
 }
 
 // ─── Browser / Test Compatibility Layer ──────────────────────────────────────
-// Exposes standard globals and helpers so existing browser tests and scripts work
 function exposeTestCompatibility() {
   window.loadLevel = loadLevel;
   window.tick = tick;
@@ -385,26 +498,111 @@ function exposeTestCompatibility() {
     get: () => loops,
     set: (v) => { loops = v; }
   });
+
+  // Progress compatibility
+  Object.defineProperty(window, 'progress', {
+    get: () => progress,
+    set: (v) => { progress = v; }
+  });
+  window.loadProgress = () => { progress = loadProgress(); return progress; };
+  window.saveProgress = (p) => { progress = saveProgress(p); return progress; };
+  window.resetProgress = () => { progress = resetProgress(); return progress; };
+  window.markCaseCompleted = (c) => { progress = markCaseCompleted(c); return progress; };
+  window.isCaseUnlocked = (i) => isCaseUnlocked(i, progress);
+  window.isCaseCompleted = (i) => isCaseCompleted(i, progress);
+  window.selectCase = (i) => loadLevel(i);
+  window.openCaseModal = openCaseModal;
+  window.closeCaseModal = closeCaseModal;
+  window.toggleCaseModal = toggleCaseModal;
+  window.renderCaseGrid = renderCaseGrid;
+  window.canExitLevel = (levelIndex, actPlates, enemies, ghostPlates) => {
+    return canExitLevel(
+      levelIndex !== undefined ? levelIndex : lv,
+      actPlates || getActivePlates(grid, getGhosts(), getPlayerPos(), getTick()),
+      enemies || getEnemies(),
+      ghostPlates !== undefined ? ghostPlates : getGhostPlates(grid, getGhosts(), getTick())
+    );
+  };
+  window.getGhostPlates = (tt) => getGhostPlates(grid, getGhosts(), tt !== undefined ? tt : getTick());
+  window.getGhosts = getGhosts;
+  window.getPlayerPos = getPlayerPos;
+  window.getActivePlates = (g, gh, p, tt) => getActivePlates(g || grid, gh || getGhosts(), p || getPlayerPos(), tt !== undefined ? tt : getTick());
 }
 
 export function initGame() {
   initRenderer(cv);
+  progress = loadProgress();
+
   initInput({
-    onStartMove: () => { if (!paused) started = true; },
-    onStrike: () => { if (!paused) started = true; },
-    onCommit: () => commit(false),
-    onReset: () => loadLevel(lv),
+    onStartMove: () => { if (!paused && !isModalOpen()) started = true; },
+    onStrike: () => { if (!paused && !isModalOpen()) started = true; },
+    onCommit: () => { if (!isModalOpen()) commit(false); },
+    onReset: () => { if (!isModalOpen()) loadLevel(lv); },
     onPause: () => {
+      if (isModalOpen()) return;
       paused = !paused;
       say(paused ? 'Paused. Press P to resume.' : '');
     },
+    onCaseSelect: (open) => {
+      if (open === false) closeCaseModal();
+      else toggleCaseModal();
+    },
     isPaused: () => paused,
     isWon: () => won,
-    isStarted: () => started
+    isStarted: () => started,
+    isModalOpen: () => isModalOpen()
   });
 
+  // Modal event listeners
+  const btnCases = $('btn-cases');
+  if (btnCases) btnCases.addEventListener('click', openCaseModal);
+  const modalClose = $('modal-close');
+  if (modalClose) modalClose.addEventListener('click', closeCaseModal);
+  const btnBack = $('btn-back-game');
+  if (btnBack) btnBack.addEventListener('click', closeCaseModal);
+  const btnContinue = $('btn-continue-case');
+  if (btnContinue) {
+    btnContinue.addEventListener('click', () => {
+      const target = progress.highestUnlocked !== undefined ? progress.highestUnlocked : 0;
+      closeCaseModal();
+      loadLevel(target);
+    });
+  }
+  const btnResetProg = $('btn-reset-prog');
+  if (btnResetProg) {
+    btnResetProg.addEventListener('click', () => {
+      if (resetConfirm) resetConfirm.style.display = 'block';
+    });
+  }
+  const btnCancelReset = $('btn-cancel-reset');
+  if (btnCancelReset) {
+    btnCancelReset.addEventListener('click', () => {
+      if (resetConfirm) resetConfirm.style.display = 'none';
+    });
+  }
+  const btnConfirmReset = $('btn-confirm-reset');
+  if (btnConfirmReset) {
+    btnConfirmReset.addEventListener('click', () => {
+      progress = resetProgress();
+      if (resetConfirm) resetConfirm.style.display = 'none';
+      renderCaseGrid();
+      closeCaseModal();
+      loadLevel(0);
+      say('Progress reset. Starting from Case 01.');
+    });
+  }
+  if (caseModal) {
+    caseModal.addEventListener('click', (e) => {
+      if (e.target === caseModal) closeCaseModal();
+    });
+  }
+
   exposeTestCompatibility();
-  loadLevel(0);
+
+  const startLv = (progress && progress.highestUnlocked > 0 && progress.highestUnlocked < LV.length)
+    ? progress.highestUnlocked
+    : 0;
+  loadLevel(startLv, true);
   requestAnimationFrame(frame);
 }
 
@@ -414,4 +612,3 @@ if (document.readyState === 'loading') {
 } else {
   initGame();
 }
-

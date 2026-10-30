@@ -40,9 +40,11 @@ export function initInput({
   onCommit,
   onReset,
   onPause,
+  onCaseSelect,
   isPaused,
   isWon,
-  isStarted
+  isStarted,
+  isModalOpen
 }) {
   // Keyboard listener
   window.addEventListener('keydown', e => {
@@ -63,6 +65,12 @@ export function initInput({
     } else if (e.key === 'z' || e.key === 'Z' || e.key === 'Backspace') {
       e.preventDefault();
       onReset();
+    } else if (e.key === 'c' || e.key === 'C') {
+      e.preventDefault();
+      if (onCaseSelect) onCaseSelect();
+    } else if (e.key === 'Escape' && isModalOpen && isModalOpen()) {
+      e.preventDefault();
+      if (onCaseSelect) onCaseSelect(false);
     } else if ((e.key === 'p' || e.key === 'P' || e.key === 'Escape') && isStarted() && !isWon()) {
       e.preventDefault();
       onPause();

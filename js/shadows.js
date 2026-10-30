@@ -38,6 +38,19 @@ export function commitShadowLoop(t) {
   return { success: true, count: ghosts.length };
 }
 
+export function getGhostPlates(grid, ghosts, tt) {
+  const activeSet = new Set();
+  if (!ghosts || !grid) return activeSet;
+  ghosts.forEach(g => {
+    const r = getGhostPos(g, tt);
+    if (r && grid[r.y] && grid[r.y][r.x]) {
+      const c = grid[r.y][r.x];
+      if (c >= 'a' && c <= 'z') activeSet.add(c);
+    }
+  });
+  return activeSet;
+}
+
 export function getActivePlates(grid, ghosts, playerPos, tt) {
   const activeSet = new Set();
   const checkTile = (x, y) => {
@@ -76,4 +89,3 @@ export function getHistory() {
 export function resetHistory() {
   hist = [];
 }
-

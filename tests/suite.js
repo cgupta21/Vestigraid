@@ -71,6 +71,9 @@ async function runTests() {
       await new Promise(res => setTimeout(res, 100));
     }
 
+    // Grant full unlock for regression tests 1-10
+    await evaluate('progress.highestUnlocked = 7; progress.completedCases = [0,1,2,3,4,5,6,7];');
+
     // Precise key tap that waits for exactly one tick to be consumed
     async function tap(key, code) {
       await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code });
@@ -765,6 +768,297 @@ async function runTests() {
     assert(!mobileLayout.overlap, `[Mobile] Logo does not overlap stage or controls (bottom: ${Math.round(mobileLayout.logoBottom)}px <= stage top: ${Math.round(mobileLayout.stageTop)}px)`);
     assert(mobileLayout.logoWidth > 0 && mobileLayout.logoHeight > 0 && mobileLayout.logoWidth <= 375, `[Mobile] Logo scaled proportionately (${Math.round(mobileLayout.logoWidth)}x${Math.round(mobileLayout.logoHeight)}px)`);
     await send('Emulation.clearDeviceMetricsOverride');
+
+
+    console.log('\n=== TEST 11: Progressive Case Unlocking & Persistent Player Progress ===');
+
+    // 1. Initial State / New Player: Only Case 01 Unlocked
+    await evaluate('localStorage.clear(); resetProgress();');
+    const initProg = await evaluate('progress');
+    assert(initProg.highestUnlocked === 0, 'New player starts with highestUnlocked = 0 (Case 01)');
+    assert(Array.isArray(initProg.completedCases) && initProg.completedCases.length === 0, 'New player has empty completedCases list');
+    assert(initProg.gameCompleted === false, 'New player has gameCompleted = false');
+    assert(await evaluate('isCaseUnlocked(0)'), 'Case 01 is unlocked for new player');
+    assert(!(await evaluate('isCaseUnlocked(1)')), 'Case 02 is locked for new player');
+    assert(!(await evaluate('isCaseUnlocked(7)')), 'Case 08 is locked for new player');
+
+    // Verify unforced loadLevel(1) is blocked for new player
+    const loadLockedRes = await evaluate('loadLevel(1)');
+    assert(loadLockedRes === false, 'loadLevel(1) rejected when Case 02 is locked');
+    assert((await evaluate('lv')) === 0, 'Current level remains Case 01 after rejected loadLevel');
+
+    // 2. Completing Case 01 Unlocks Case 02
+    await evaluate('markCaseCompleted(0)');
+    const progAfterC1 = await evaluate('progress');
+    assert(progAfterC1.highestUnlocked === 1, 'Completing Case 01 sets highestUnlocked to 1');
+    assert(progAfterC1.completedCases.includes(0), 'Case 01 recorded in completedCases');
+    assert(await evaluate('isCaseUnlocked(1)'), 'Case 02 is now unlocked');
+    const loadC2Res = await evaluate('loadLevel(1)');
+    assert(loadC2Res === true, 'loadLevel(1) successfully loads Case 02 once unlocked');
+    assert((await evaluate('lv')) === 1, 'Current level advanced to Case 02 (lv = 1)');
+
+    // 3. Completing Case 05 Unlocks Case 06
+    await evaluate('markCaseCompleted(1); markCaseCompleted(2); markCaseCompleted(3); markCaseCompleted(4);');
+    const progAfterC5 = await evaluate('progress');
+    assert(progAfterC5.highestUnlocked === 5, 'Completing through Case 05 sets highestUnlocked to 5 (Case 06)');
+    assert(await evaluate('isCaseUnlocked(5)'), 'Case 06 is unlocked after completing Case 05');
+
+    // 4. Cases Beyond Highest Unlocked Remain Disabled / Inaccessible
+    assert(!(await evaluate('isCaseUnlocked(6)')), 'Case 07 remains locked');
+    assert(!(await evaluate('isCaseUnlocked(7)')), 'Case 08 remains locked');
+    const loadC7Res = await evaluate('loadLevel(6)');
+    assert(loadC7Res === false, 'loadLevel(6) rejected while locked');
+
+    // 5. Previously Unlocked Cases Remain Selectable
+    assert(await evaluate('isCaseUnlocked(0)'), 'Previously unlocked Case 01 remains unlocked');
+    assert(await evaluate('isCaseUnlocked(2)'), 'Previously unlocked Case 03 remains unlocked');
+    const reloadC1Res = await evaluate('loadLevel(0)');
+    assert(reloadC1Res === true && (await evaluate('lv')) === 0, 'Can navigate back to previously unlocked Case 01');
+
+    // 6. Replaying Earlier Case Does Not Erase Progression (Monotonic Progression)
+    await evaluate('markCaseCompleted(0)'); // replay Case 01
+    await evaluate('loadLevel(2); markCaseCompleted(2);'); // replay Case 03
+    const progAfterReplay = await evaluate('progress');
+    assert(progAfterReplay.highestUnlocked === 5, 'Replaying Case 01 and Case 03 preserves highestUnlocked = 5');
+    assert(progAfterReplay.completedCases.length === 5, 'completedCases does not duplicate entries or erase progress');
+
+    // 7. LocalStorage Persistence & Reload
+    const storedRaw = await evaluate('localStorage.getItem("vestigraid_progress_v1")');
+    assert(typeof storedRaw === 'string' && storedRaw.length > 0, 'Progress successfully serialized into localStorage under key vestigraid_progress_v1');
+    const storedObj = JSON.parse(storedRaw);
+    assert(storedObj.highestUnlocked === 5 && storedObj.completedCases.includes(4), 'localStorage stores correct highestUnlocked and completedCases');
+
+    // 8. Corrupted LocalStorage Safe Fallback
+    await evaluate('localStorage.setItem("vestigraid_progress_v1", "{bad json!!}");');
+    const fallbackProg = await evaluate('loadProgress()');
+    assert(fallbackProg.highestUnlocked === 0, 'Corrupted JSON in localStorage falls back to highestUnlocked = 0 without crash');
+    assert(fallbackProg.gameCompleted === false, 'Corrupted JSON falls back to gameCompleted = false');
+
+    await evaluate('localStorage.setItem("vestigraid_progress_v1", JSON.stringify({ highestUnlocked: -10, completedCases: "invalid" }));');
+    const clampedProg = await evaluate('loadProgress()');
+    assert(clampedProg.highestUnlocked === 0 && Array.isArray(clampedProg.completedCases), 'Invalid schema/negative values normalized safely');
+
+    // Restore valid state
+    await evaluate(`saveProgress(${JSON.stringify(progAfterReplay)})`);
+
+    // 9. Case Selection UI Modal Rendering & Interaction
+    await evaluate('openCaseModal()');
+    const modalVisible = await evaluate('document.getElementById("case-modal").style.display !== "none"');
+    assert(modalVisible, 'Case selection modal is visible when opened');
+
+    const modalSummary = await evaluate('document.getElementById("progress-summary").textContent');
+    assert(modalSummary.includes('6 of 8 Cases Unlocked'), `Modal displays accurate unlocked summary: "${modalSummary}"`);
+
+    const cardStates = await evaluate(`(() => {
+      const cards = document.querySelectorAll('.case-card');
+      return Array.from(cards).map((c, i) => ({
+        index: i,
+        locked: c.classList.contains('locked'),
+        unlocked: c.classList.contains('unlocked'),
+        disabled: c.disabled,
+        badgeText: c.querySelector('.case-badge')?.textContent
+      }));
+    })()`);
+    assert(cardStates.length === 8, 'Modal renders all 8 case cards');
+    assert(cardStates[0].unlocked && !cardStates[0].disabled && cardStates[0].badgeText.includes('COMPLETED'), 'Case 01 card is unlocked, enabled, and marked COMPLETED');
+    assert(cardStates[5].unlocked && !cardStates[5].disabled && cardStates[5].badgeText.includes('UNLOCKED'), 'Case 06 card is unlocked and marked UNLOCKED');
+    assert(cardStates[6].locked && cardStates[6].disabled && cardStates[6].badgeText.includes('LOCKED'), 'Case 07 card is locked, disabled, and has LOCKED badge');
+    assert(cardStates[7].locked && cardStates[7].disabled && cardStates[7].badgeText.includes('LOCKED'), 'Case 08 card is locked, disabled, and has LOCKED badge');
+
+    // Test Continue button loads highest unlocked case
+    await evaluate('document.getElementById("btn-continue-case").click()');
+    assert((await evaluate('lv')) === 5, 'Continue button in modal loads highest unlocked case (Case 06)');
+    assert(!(await evaluate('document.getElementById("case-modal").style.display !== "none"')), 'Modal closes after clicking Continue');
+
+    // Test C key shortcut toggles modal
+    await sendKeyRaw('c', 'KeyC');
+    assert(await evaluate('document.getElementById("case-modal").style.display !== "none"'), 'Pressing C opens the case modal');
+    await sendKeyRaw('Escape', 'Escape');
+    assert(!(await evaluate('document.getElementById("case-modal").style.display !== "none"')), 'Pressing Escape closes the case modal');
+
+    // 10. Reset Progress Confirmation Flow
+    await evaluate('openCaseModal()');
+    await evaluate('document.getElementById("btn-reset-prog").click()');
+    const confirmBoxVisible = await evaluate('document.getElementById("reset-confirm").style.display !== "none"');
+    assert(confirmBoxVisible, 'Reset confirmation box appears when clicking Reset Progress');
+
+    await evaluate('document.getElementById("btn-cancel-reset").click()');
+    assert(!(await evaluate('document.getElementById("reset-confirm").style.display !== "none"')), 'Cancel hides confirmation dialog');
+    assert((await evaluate('progress.highestUnlocked')) === 5, 'Cancel preserves progress');
+
+    await evaluate('document.getElementById("btn-reset-prog").click()');
+    await evaluate('document.getElementById("btn-confirm-reset").click()');
+    const postResetProg = await evaluate('progress');
+    assert(postResetProg.highestUnlocked === 0, 'Confirming reset resets highestUnlocked to 0');
+    assert(postResetProg.completedCases.length === 0, 'Confirming reset clears completedCases');
+    assert((await evaluate('lv')) === 0, 'Confirming reset loads Case 01');
+
+    // 11. Final Case 08 Completion & Victory Recording
+    for (let c = 0; c < 8; c++) {
+      await evaluate(`markCaseCompleted(${c})`);
+    }
+    const finalProg = await evaluate('progress');
+    assert(finalProg.gameCompleted === true, 'Completing Case 08 records gameCompleted = true');
+    assert(finalProg.highestUnlocked === 7, 'highestUnlocked reaches 7 on full game completion');
+    assert(finalProg.completedCases.length === 8, 'All 8 cases recorded in completedCases');
+
+
+    console.log('\n=== TEST 12: Exit Validation, Gate Synchronization & Anti-Bypass Across All 8 Cases ===');
+
+    // 1. All 8 Cases: Verify Exit is initially LOCKED at start
+    for (let c = 0; c < 8; c++) {
+      await evaluate(`loadLevel(${c}, true)`);
+      await new Promise(r => setTimeout(r, 40));
+      const initExit = await evaluate(`canExitLevel(${c})`);
+      assert(initExit.canExit === false, `Case 0${c+1} exit is LOCKED at start`, `reason="${initExit.message}"`);
+      assert(typeof initExit.message === 'string' && initExit.message.length > 0, `Case 0${c+1} provides descriptive locked message`);
+    }
+
+    // 2. Anti-Bypass Verification Across All 8 Cases (Moving onto exit without puzzle solve rejects victory)
+    const exitCoords = [
+      { lv: 0, x: 8, y: 2, name: 'Case 01', expectedMsg: 'Door A is locked' },
+      { lv: 1, x: 10, y: 3, name: 'Case 02', expectedMsg: 'Door A is locked' },
+      { lv: 2, x: 10, y: 2, name: 'Case 03', expectedMsg: 'Door A is locked' },
+      { lv: 3, x: 10, y: 5, name: 'Case 04', expectedMsg: 'Kill all enemies' },
+      { lv: 4, x: 10, y: 1, name: 'Case 05', expectedMsg: 'Door A is locked' },
+      { lv: 5, x: 10, y: 1, name: 'Case 06', expectedMsg: 'Door A is locked' },
+      { lv: 6, x: 10, y: 3, name: 'Case 07', expectedMsg: 'Door C is locked' },
+      { lv: 7, x: 10, y: 5, name: 'Case 08', expectedMsg: 'Kill all enemies' }
+    ];
+
+    for (const ec of exitCoords) {
+      await evaluate(`loadLevel(${ec.lv}, true)`);
+      await new Promise(r => setTimeout(r, 40));
+      // Force position directly onto Exit tile without solving puzzle
+      await evaluate(`pos = { x: ${ec.x}, y: ${ec.y} }; tick();`);
+      const currentLv = await evaluate('lv');
+      const msg = await evaluate('document.getElementById("msg").textContent');
+      assert(currentLv === ec.lv, `${ec.name} rejected premature exit (still on level ${ec.lv})`);
+      assert(msg.includes(ec.expectedMsg), `${ec.name} displayed locked warning: "${msg}"`);
+    }
+
+    // 3. Partial Completion Checks: Completing only some requirements does NOT unlock exit
+    // Case 02: Only Door A open, Door B closed
+    const c2Partial = await evaluate('canExitLevel(1, new Set(["a"]), [], new Set(["a"]))');
+    assert(c2Partial.canExit === false && c2Partial.message.includes('Door B is locked'), 'Case 02 rejects exit when only Door A is open');
+
+    // Case 03: Sentry alive but Door A closed
+    const c3Partial = await evaluate('canExitLevel(2, new Set(), [{tag: "01", dead: false}], new Set())');
+    assert(c3Partial.canExit === false && c3Partial.message.includes('Door A is locked'), 'Case 03 rejects exit when Door A is closed, even with sentry alive');
+
+    // Case 04: Sentinel 01 dead, Sentinel 02 alive
+    const c4Partial1 = await evaluate('canExitLevel(3, new Set(), [{tag: "01", dead: true}, {tag: "02", dead: false}], new Set())');
+    assert(c4Partial1.canExit === false && c4Partial1.message.includes('Kill all enemies'), 'Case 04 rejects exit when Sentinel 02 is alive');
+
+    // Case 04: Sentinel 01 alive, Sentinel 02 dead
+    const c4Partial2 = await evaluate('canExitLevel(3, new Set(), [{tag: "01", dead: false}, {tag: "02", dead: true}], new Set())');
+    assert(c4Partial2.canExit === false && c4Partial2.message.includes('Kill all enemies'), 'Case 04 rejects exit when Sentinel 01 is alive');
+
+    // Case 05: Doors A and B open, Door C closed
+    const c5Partial = await evaluate('canExitLevel(4, new Set(["a", "b"]), [], new Set(["a", "b"]))');
+    assert(c5Partial.canExit === false && c5Partial.message.includes('Door C is locked'), 'Case 05 rejects exit when Door C is closed');
+
+    // Case 06: Sentries alive but Door A closed
+    const c6Partial = await evaluate('canExitLevel(5, new Set(), [{tag: "01", dead: false}, {tag: "02", dead: false}], new Set())');
+    assert(c6Partial.canExit === false && c6Partial.message.includes('Door A is locked'), 'Case 06 rejects exit when Door A is closed');
+
+    // Case 07: Door A open, Gate C closed
+    const c7Partial = await evaluate('canExitLevel(6, new Set(["a"]), [], new Set(["a"]))');
+    assert(c7Partial.canExit === false && c7Partial.message.includes('Door C is locked'), 'Case 07 rejects exit when Gate C is closed');
+
+    // Case 08: Door B open, Sentinel 01 dead, Sentinel 02 alive
+    const c8Partial1 = await evaluate('canExitLevel(7, new Set(["b"]), [{tag: "01", dead: true}, {tag: "02", dead: false}], new Set(["b"]))');
+    assert(c8Partial1.canExit === false && c8Partial1.message.includes('Kill all enemies'), 'Case 08 rejects exit when Sentinel 02 is alive');
+
+    // Case 08: Door B open, Sentinel 01 alive, Sentinel 02 dead
+    const c8Partial2 = await evaluate('canExitLevel(7, new Set(["b"]), [{tag: "01", dead: false}, {tag: "02", dead: true}], new Set(["b"]))');
+    assert(c8Partial2.canExit === false && c8Partial2.message.includes('Kill all enemies'), 'Case 08 rejects exit when Sentinel 01 is alive');
+
+    // Case 08: All sentinels dead, but Door B closed
+    const c8PartialDoor = await evaluate('canExitLevel(7, new Set(), [{tag: "01", dead: true}, {tag: "02", dead: true}], new Set())');
+    assert(c8PartialDoor.canExit === false && c8PartialDoor.message.includes('Door B is locked'), 'Case 08 rejects exit when Door B is closed');
+
+    // 4. Complete Requirement Satisfaction: Exit Unlocks (canExit === true) Across All 8 Cases
+    const c1Full = await evaluate('canExitLevel(0, new Set(["a"]), [], new Set(["a"]))');
+    assert(c1Full.canExit === true, 'Case 01 exit UNLOCKS when shadow holds plate a');
+
+    const c2Full = await evaluate('canExitLevel(1, new Set(["a", "b"]), [], new Set(["a", "b"]))');
+    assert(c2Full.canExit === true, 'Case 02 exit UNLOCKS when shadows hold plates a and b');
+
+    const c3Full = await evaluate('canExitLevel(2, new Set(["a"]), [{tag: "01", dead: false}], new Set(["a"]))');
+    assert(c3Full.canExit === true, 'Case 03 exit UNLOCKS with sentry ALIVE when shadow holds plate a');
+
+    const c4Full = await evaluate('canExitLevel(3, new Set(), [{tag: "01", dead: true}, {tag: "02", dead: true}], new Set())');
+    assert(c4Full.canExit === true, 'Case 04 exit UNLOCKS when both sentinels are eliminated');
+
+    const c5Full = await evaluate('canExitLevel(4, new Set(["a", "b", "c"]), [], new Set(["a", "b", "c"]))');
+    assert(c5Full.canExit === true, 'Case 05 exit UNLOCKS when shadows hold plates a, b, and c');
+
+    const c6Full = await evaluate('canExitLevel(5, new Set(["a"]), [{tag: "01", dead: false}, {tag: "02", dead: false}], new Set(["a"]))');
+    assert(c6Full.canExit === true, 'Case 06 exit UNLOCKS when shadow holds plate a');
+
+    const c7Full = await evaluate('canExitLevel(6, new Set(["a", "c"]), [], new Set(["a", "c"]))');
+    assert(c7Full.canExit === true, 'Case 07 exit UNLOCKS when branch and Gate C are held open');
+
+    const c8Full = await evaluate('canExitLevel(7, new Set(["b"]), [{tag: "01", dead: true}, {tag: "02", dead: true}], new Set(["b"]))');
+    assert(c8Full.canExit === true, 'Case 08 exit UNLOCKS when both sentinels are defeated and Door B is open');
+
+    // 5. Visual State & Gameplay Exit Synchronization Across All 8 Cases
+    for (let c = 0; c < 8; c++) {
+      await evaluate(`loadLevel(${c}, true)`);
+      await new Promise(r => setTimeout(r, 40));
+      // At start, canExitLevel is false, so renderer renders locked state (red)
+      const renderLockedState = await evaluate('!canExitLevel(' + c + ').canExit');
+      assert(renderLockedState === true, `Case 0${c+1} renderer visual locked state matches validation (locked = true)`);
+    }
+
+    // 6. Legitimate Exit Advances Level
+    await evaluate('loadLevel(0, true)');
+    await new Promise(r => setTimeout(r, 40));
+    // Simulate legitimate Case 01 completion by placing a shadow on plate a
+    await evaluate(`(() => {
+      ghosts.push([{ x: 2, y: 3, f: [1, 0], s: 0 }]); // ghost on plate a
+      pos = { x: 8, y: 2 }; // player on exit
+      tick();
+    })()`);
+    const lvAfterLegitWin = await evaluate('lv');
+    assert(lvAfterLegitWin === 1, 'Legitimate exit completion advances Case 01 to Case 02');
+
+    // Simulate legitimate Case 03 completion with sentry actively alive
+    await evaluate('loadLevel(2, true)');
+    await new Promise(r => setTimeout(r, 40));
+    const c3SentryAlive = await evaluate('enemies[0] && enemies[0].dead === false');
+    assert(c3SentryAlive === true, 'Case 03 sentry 01 is verified alive before exiting');
+    await evaluate(`(() => {
+      ghosts.push([{ x: 3, y: 2, f: [1, 0], s: 0 }]); // ghost on plate a
+      pos = { x: 10, y: 2 }; // player on exit
+      tick();
+    })()`);
+    const lvAfterC3Legit = await evaluate('lv');
+    assert(lvAfterC3Legit === 3, 'Case 03 legitimately completed with sentry alive and advanced to Case 04');
+
+    // Simulate legitimate Case 04 completion after defeating all enemies
+    await evaluate('loadLevel(3, true)');
+    await new Promise(r => setTimeout(r, 40));
+    await evaluate(`(() => {
+      enemies.forEach(e => e.dead = true);
+      pos = { x: 10, y: 5 }; // player on exit
+      tick();
+    })()`);
+    const lvAfterC4Legit = await evaluate('lv');
+    assert(lvAfterC4Legit === 4, 'Case 04 legitimately completed when all enemies killed, advancing to Case 05');
+
+    // Simulate legitimate Case 08 completion after defeating all enemies and holding Door B
+    await evaluate('loadLevel(7, true)');
+    await new Promise(r => setTimeout(r, 40));
+    await evaluate(`(() => {
+      enemies.forEach(e => e.dead = true);
+      ghosts.push([{ x: 10, y: 1, f: [1, 0], s: 0 }]); // ghost on plate b
+      pos = { x: 10, y: 5 }; // player on exit
+      tick();
+    })()`);
+    const wonAfterC8Legit = await evaluate('won');
+    assert(wonAfterC8Legit === true, 'Case 08 legitimately completed when all enemies killed and Door B open, triggering game victory');
 
     proc.kill();
 

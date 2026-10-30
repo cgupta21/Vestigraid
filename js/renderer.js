@@ -1,3 +1,6 @@
+import { canExitLevel } from './levels.js';
+import { getGhostPlates } from './shadows.js';
+
 // ─── Canvas rendering, UI updates, and visual theme ──────────────────────────
 
 export const C = {
@@ -58,6 +61,7 @@ export function renderGame({
   getEnemyPosFn,
   getGhostPosFn,
   t,
+  lv,
   isBoss,
   requiredDoor,
   started,
@@ -153,10 +157,10 @@ export function renderGame({
         }
 
       } else if (c === 'E') {
-        // Exit
-        const bossLocked = Boolean(isBoss && enemies.some(e => !e.dead));
-        const doorLocked = Boolean(requiredDoor && !actPlates.has(requiredDoor.toLowerCase()));
-        const locked = bossLocked || doorLocked;
+        // Exit — synchronized with authoritative canExitLevel
+        const shadowPlates = getGhostPlates(grid, ghosts, t);
+        const exitCheck = canExitLevel(lv !== undefined ? lv : 0, actPlates, enemies, shadowPlates);
+        const locked = !exitCheck.canExit;
         cx.strokeStyle = locked ? C.blood : C.olv;
         cx.lineWidth = 3;
         cx.strokeRect(px + 5, py + 5, T - 10, T - 10);
@@ -294,4 +298,3 @@ export function updateUI({ loops, t, maxTicks, tickMs, ghosts, domElements }) {
       : '<em>none yet</em>';
   }
 }
-

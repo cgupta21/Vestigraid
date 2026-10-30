@@ -37,15 +37,43 @@
 <div id="ov"></div>
 </div>
 <aside class="file">
-<span class="tag" id="lvn">CASE 01</span>
+<div class="file-top">
+  <span class="tag" id="lvn">CASE 01</span>
+  <button class="btn btn-case-select" id="btn-cases" type="button">Select Case</button>
+</div>
 <h2 id="lvt">—</h2>
 <p id="hint"></p>
 <div>Loop <b id="loopn">1</b> · Shadows</div>
 <div class="sh" id="sh"></div>
 <div id="msg"></div>
-<div class="keys"><kbd>WASD</kbd>/<kbd>↑←↓→</kbd> move<br><kbd>SPACE</kbd> strike ahead<br><kbd>R</kbd> end loop (leave shadow)<br><kbd>P</kbd>/<kbd>ESC</kbd> pause<br><kbd>Z</kbd> reset case<br>Shadows replay your moves, then freeze at the end and block you.</div>
+<div class="keys"><kbd>WASD</kbd>/<kbd>↑←↓→</kbd> move<br><kbd>SPACE</kbd> strike ahead<br><kbd>R</kbd> end loop (leave shadow)<br><kbd>C</kbd> select case<br><kbd>P</kbd>/<kbd>ESC</kbd> pause<br><kbd>Z</kbd> reset case<br>Shadows replay your moves, then freeze at the end and block you.</div>
 </aside>
 </main>
+
+<div id="case-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2 id="modal-title">Sector Archive</h2>
+      <button class="modal-close" id="modal-close" type="button" aria-label="Close Case Archive">✕</button>
+    </div>
+    <div class="modal-sub" id="progress-summary">1 of 8 Cases Unlocked</div>
+    <div class="case-grid" id="case-grid"></div>
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-primary" id="btn-continue-case" type="button">Continue</button>
+        <button class="btn" id="btn-back-game" type="button">Back</button>
+      </div>
+      <button class="btn btn-danger-link" id="btn-reset-prog" type="button">Reset Progress</button>
+    </div>
+    <div id="reset-confirm" class="reset-confirm" style="display: none;">
+      <p><strong>Reset all saved progress?</strong> All unlocked cases and completion records will be permanently erased. You will restart from Case 01.</p>
+      <div class="confirm-btns">
+        <button class="btn btn-danger" id="btn-confirm-reset" type="button">Yes, Reset Progress</button>
+        <button class="btn" id="btn-cancel-reset" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

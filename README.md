@@ -82,6 +82,7 @@ Experience Vestigraid directly in your web browser with zero setup or installati
   - **Case 06 — Crossfire** (*65 seconds / 464 ticks*): Sentry coordination puzzle featuring two intersecting sentry patrol lanes (`01` and `02`) alongside blast door `A`. Requires precise timing and combat strikes to slip past the crossfire.
   - **Case 07 — The Split** (*75 seconds / 536 ticks*): Dual-branch sector requiring simultaneous coordination across upper and lower wings to unlock gates `A`, `B`, and final gate `C`.
   - **Case 08 — The Last Loop** (*90 seconds / 643 ticks*): Master sector uniting dual pressure plates (`a`, `b`) and two high-speed roaming sentinels (`01`, `02`) who must both be eliminated to unseal the final exit and complete all cases.
+- **Progressive Case Unlocking & Persistence**: Progress saves seamlessly to browser `localStorage` (`vestigraid_progress_v1`). Unlocking is strictly progressive — solve each case to access the next. Any previously unlocked sector can be replayed at will via the Sector Archive (`C` key or header button), without risk of losing progress. Includes a guarded "Reset Progress" option with explicit confirmation.
 - **Dynamic Hi-DPI Rendering**: Automatic canvas scaling using `window.devicePixelRatio` ensures pixel-sharp geometry and text across high-density displays (Retina, 4K) without layout shifts.
 - **Cross-Platform Responsive Design**: Playable with standard desktop keyboard controls or mobile touch screens via an integrated on-screen directional pad and action buttons.
 
@@ -96,6 +97,7 @@ Experience Vestigraid directly in your web browser with zero setup or installati
 | **Move Up / Down / Left / Right** | `W` `A` `S` `D` or `↑` `←` `↓` `→` | On-Screen D-Pad Buttons |
 | **Strike Ahead** | `Spacebar` | **Strike** Button |
 | **End / Commit Loop** | `R` | **Loop** Button |
+| **Select Case / Archive** | `C` | **Select Case** Button |
 | **Pause / Resume** | `P` or `Esc` | **Pause** Button |
 | **Reset Case** | `Z` or `Backspace` | **Reset** Button |
 
