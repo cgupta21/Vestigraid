@@ -17,6 +17,11 @@ export const C = {
 
 let cv = null;
 let cx = null;
+let lastExitVisualLocked = true;
+
+export function isExitVisualLocked() {
+  return lastExitVisualLocked;
+}
 
 export function initRenderer(canvasElement) {
   cv = canvasElement;
@@ -159,8 +164,10 @@ export function renderGame({
       } else if (c === 'E') {
         // Exit — synchronized with authoritative canExitLevel
         const shadowPlates = getGhostPlates(grid, ghosts, t);
-        const exitCheck = canExitLevel(lv !== undefined ? lv : 0, actPlates, enemies, shadowPlates);
+        const currentCase = lv !== undefined ? lv : (typeof window !== "undefined" && window.lv !== undefined ? window.lv : 0);
+        const exitCheck = canExitLevel(currentCase, actPlates, enemies, shadowPlates);
         const locked = !exitCheck.canExit;
+        lastExitVisualLocked = locked;
         cx.strokeStyle = locked ? C.blood : C.olv;
         cx.lineWidth = 3;
         cx.strokeRect(px + 5, py + 5, T - 10, T - 10);

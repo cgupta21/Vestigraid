@@ -52,6 +52,7 @@ import {
   initRenderer,
   resizeCanvas,
   renderGame,
+  isExitVisualLocked,
   updateUI
 } from './renderer.js';
 import {
@@ -239,6 +240,7 @@ export function startRound() {
   resetEnemiesAlive();
   clearInput();
   syncUI();
+  renderCurrentFrame();
 }
 
 export function tick() {
@@ -379,13 +381,7 @@ export function showOverlay(header, body, canPlayAgain) {
   }
 }
 
-export function frame(ts) {
-  const isRunning = started && !won && !paused;
-  updateTimeAccumulator(ts, isRunning, () => {
-    tick();
-    return started; // break if die() or commit() stopped loop
-  });
-
+export function renderCurrentFrame() {
   const actPlates = getActivePlates(grid, getGhosts(), getPlayerPos(), getTick());
   renderGame({
     grid,
@@ -402,12 +398,23 @@ export function frame(ts) {
     getEnemyPosFn: getEnemyPos,
     getGhostPosFn: getGhostPos,
     t: getTick(),
+    lv,
     isBoss: Boolean(LV[lv].boss),
     requiredDoor: LV[lv].requiredDoor,
     started,
     paused,
     won
   });
+}
+
+export function frame(ts) {
+  const isRunning = started && !won && !paused;
+  updateTimeAccumulator(ts, isRunning, () => {
+    tick();
+    return started; // break if die() or commit() stopped loop
+  });
+
+  renderCurrentFrame();
 
   if (flash > 0) flash--;
 
@@ -527,6 +534,8 @@ function exposeTestCompatibility() {
   window.getGhosts = getGhosts;
   window.getPlayerPos = getPlayerPos;
   window.getActivePlates = (g, gh, p, tt) => getActivePlates(g || grid, gh || getGhosts(), p || getPlayerPos(), tt !== undefined ? tt : getTick());
+  window.renderCurrentFrame = renderCurrentFrame;
+  window.isExitVisualLocked = isExitVisualLocked;
 }
 
 export function initGame() {

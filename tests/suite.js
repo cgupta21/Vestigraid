@@ -388,7 +388,7 @@ async function runTests() {
     // 6. Verify timer sufficiency
     let solveTick = await evaluate('t');
     let maxT = await evaluate('Math.round((LV[lv].timeLimit * 1000) / 140)');
-    assert(solveTick < maxT * 0.25, 'Timer sufficiency confirmed (completed well within 70s limit)', `tick=${solveTick}/${maxT}`);
+    assert(solveTick < maxT * 0.25, 'Timer sufficiency confirmed (completed well within 18s limit)', `tick=${solveTick}/${maxT}`);
 
     // 7. Walk to Exit (10,5)
     await tap('ArrowDown', 'ArrowDown'); // t=8 (5,4)
@@ -603,14 +603,14 @@ async function runTests() {
     console.log('\n=== TEST 9: Timer Balance, Pausing, State Transitions & Auto-Commit ===');
     // 1. Verify per-case timer values and tick computations across all 8 cases
     const expectedTimers = [
-      { lv: 0, s: 30, ticks: 214, name: 'Case 01' },
-      { lv: 1, s: 40, ticks: 286, name: 'Case 02' },
-      { lv: 2, s: 50, ticks: 357, name: 'Case 03' },
-      { lv: 3, s: 70, ticks: 500, name: 'Case 04' },
-      { lv: 4, s: 60, ticks: 429, name: 'Case 05' },
-      { lv: 5, s: 65, ticks: 464, name: 'Case 06' },
-      { lv: 6, s: 75, ticks: 536, name: 'Case 07' },
-      { lv: 7, s: 90, ticks: 643, name: 'Case 08' }
+      { lv: 0, s: 10, ticks: 71, name: 'Case 01' },
+      { lv: 1, s: 12, ticks: 86, name: 'Case 02' },
+      { lv: 2, s: 14, ticks: 100, name: 'Case 03' },
+      { lv: 3, s: 18, ticks: 129, name: 'Case 04' },
+      { lv: 4, s: 14, ticks: 100, name: 'Case 05' },
+      { lv: 5, s: 18, ticks: 129, name: 'Case 06' },
+      { lv: 6, s: 22, ticks: 157, name: 'Case 07' },
+      { lv: 7, s: 26, ticks: 186, name: 'Case 08' }
     ];
     for (const exp of expectedTimers) {
       await evaluate(`loadLevel(${exp.lv})`);
@@ -1008,9 +1008,86 @@ async function runTests() {
       await evaluate(`loadLevel(${c}, true)`);
       await new Promise(r => setTimeout(r, 40));
       // At start, canExitLevel is false, so renderer renders locked state (red)
-      const renderLockedState = await evaluate('!canExitLevel(' + c + ').canExit');
+      const renderLockedState = await evaluate('renderCurrentFrame(); isExitVisualLocked()');
       assert(renderLockedState === true, `Case 0${c+1} renderer visual locked state matches validation (locked = true)`);
     }
+
+    // 5B. Comprehensive Live Visual Transition Tests for Every Case
+    // Case 04 Live Progression:
+    await evaluate('loadLevel(3, true)');
+    await new Promise(r => setTimeout(r, 40));
+    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 04 visual exit is RED when both enemies are alive');
+    // Defeat only enemy 01
+    await evaluate('enemies[0].dead = true; renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 04 visual exit remains RED when only enemy 01 is defeated');
+    // Defeat only enemy 02
+    await evaluate('enemies[0].dead = false; enemies[1].dead = true; renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 04 visual exit remains RED when only enemy 02 is defeated');
+    // Defeat BOTH enemies
+    await evaluate('enemies[0].dead = true; enemies[1].dead = true; renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 04 visual exit turns GREEN immediately after both enemies are defeated');
+
+    // Case 02 Live Progression:
+    await evaluate('loadLevel(1, true)');
+    await new Promise(r => setTimeout(r, 40));
+    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 02 visual exit is RED at start');
+    // Only Door A open
+    await evaluate('ghosts.push([{x: 2, y: 2, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 02 visual exit remains RED when only Door A is open');
+    // Both Doors A and B open
+    await evaluate('ghosts.push([{x: 6, y: 1, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 02 visual exit turns GREEN immediately when both Doors A and B are open');
+
+    // Case 03 Live Progression (Avoidance):
+    await evaluate('loadLevel(2, true)');
+    await new Promise(r => setTimeout(r, 40));
+    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 03 visual exit is RED when Door A is closed');
+    // Shadow holds Door A, sentry alive
+    await evaluate('ghosts.push([{x: 3, y: 2, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 03 visual exit turns GREEN with Door A held, even with sentry alive');
+
+    // Case 05 Live Progression:
+    await evaluate('loadLevel(4, true)');
+    await new Promise(r => setTimeout(r, 40));
+    // 2 of 3 doors open (A and B)
+    await evaluate('ghosts.push([{x: 2, y: 3, f: [1,0], s: 0}], [{x: 5, y: 1, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 05 visual exit remains RED when only two doors are open');
+    // All 3 doors open
+    await evaluate('ghosts.push([{x: 5, y: 3, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 05 visual exit turns GREEN immediately when all three doors are open');
+
+    // Case 06 Live Progression (Avoidance):
+    await evaluate('loadLevel(5, true)');
+    await new Promise(r => setTimeout(r, 40));
+    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 06 visual exit is RED when Door A is closed');
+    // Shadow holds Door A, sentries alive
+    await evaluate('ghosts.push([{x: 3, y: 3, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 06 visual exit turns GREEN with Door A held, even with sentries alive');
+
+    // Case 07 Live Progression:
+    await evaluate('loadLevel(6, true)');
+    await new Promise(r => setTimeout(r, 40));
+    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 07 visual exit is RED at start');
+    // Only branch A open, Gate C closed
+    await evaluate('ghosts.push([{x: 2, y: 3, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 07 visual exit remains RED when Gate C is closed');
+    // Gate C open as well
+    await evaluate('ghosts.push([{x: 10, y: 5, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 07 visual exit turns GREEN immediately when branch and Gate C are held open');
+
+    // Case 08 Live Progression:
+    await evaluate('loadLevel(7, true)');
+    await new Promise(r => setTimeout(r, 40));
+    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 08 visual exit is RED when enemies alive and Door B closed');
+    // One enemy defeated
+    await evaluate('enemies[0].dead = true; renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 08 visual exit remains RED when only one enemy is defeated');
+    // Both enemies defeated but Door B closed
+    await evaluate('enemies[1].dead = true; renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 08 visual exit remains RED when enemies are defeated but Door B is closed');
+    // Both enemies defeated AND Door B open
+    await evaluate('ghosts.push([{x: 10, y: 1, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 08 visual exit turns GREEN immediately when both enemies are dead and Door B is open');
 
     // 6. Legitimate Exit Advances Level
     await evaluate('loadLevel(0, true)');

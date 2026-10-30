@@ -74,14 +74,14 @@ Experience Vestigraid directly in your web browser with zero setup or installati
 - **Directional Melee Combat**: Execute forward directional strikes (`Space`) to eliminate patrolling enemies or strike rogue echoes. Strikes feature an active cooldown recovery cycle (3 simulation ticks).
 - **Fixed-Timestep Simulation**: Runs on a deterministic 140 ms game tick (`TICK = 140ms`) with an accumulator loop and delta-time clamping (`MAX_DT = 420ms`) to eliminate frame-rate variance and prevent multi-tick bursts after tab switching.
 - **Case Progression & Puzzle Design**:
-  - **Case 01 — Hold the Door** (*30 seconds / 214 ticks*): Single pressure plate and security door. Teaches loop commitment and shadow door-holding mechanics.
-  - **Case 02 — Two Keys** (*40 seconds / 286 ticks*): Multi-stage puzzle requiring chained loops to activate plates `a` and `b` in sequence to open doors `A` and `B`.
-  - **Case 03 — The Sentry** (*50 seconds / 357 ticks*): Introduces real-time enemy patrol routes across waypoint tracks. Requires precise timing to cross the sentry lane safely.
-  - **Case 04 — The Team** (*70 seconds / 500 ticks*): Boss puzzle. Two rogue sentinels patrol the sector corridors. Both must be destroyed in the same loop before the exit unlock triggers.
-  - **Case 05 — The Relay** (*60 seconds / 429 ticks*): Triple-chamber security relay. Chained shadows must systematically trigger floor switches `a`, `b`, and `c` to unlock blast gates `A`, `B`, and `C` in sequence.
-  - **Case 06 — Crossfire** (*65 seconds / 464 ticks*): Sentry coordination puzzle featuring two intersecting sentry patrol lanes (`01` and `02`) alongside blast door `A`. Requires precise timing and combat strikes to slip past the crossfire.
-  - **Case 07 — The Split** (*75 seconds / 536 ticks*): Dual-branch sector requiring simultaneous coordination across upper and lower wings to unlock gates `A`, `B`, and final gate `C`.
-  - **Case 08 — The Last Loop** (*90 seconds / 643 ticks*): Master sector uniting dual pressure plates (`a`, `b`) and two high-speed roaming sentinels (`01`, `02`) who must both be eliminated to unseal the final exit and complete all cases.
+  - **Case 01 — Hold the Door** (*10 seconds / 71 ticks*): Single pressure plate and security door. Teaches loop commitment and shadow door-holding mechanics.
+  - **Case 02 — Two Keys** (*12 seconds / 86 ticks*): Multi-stage puzzle requiring chained loops to activate plates `a` and `b` in sequence to open doors `A` and `B`.
+  - **Case 03 — The Sentry** (*14 seconds / 100 ticks*): Introduces real-time enemy patrol routes across waypoint tracks. Requires precise timing to cross the sentry lane safely.
+  - **Case 04 — The Team** (*18 seconds / 129 ticks*): Boss puzzle. Two rogue sentinels patrol the sector corridors. Both must be destroyed in the same loop before the exit unlock triggers.
+  - **Case 05 — The Relay** (*14 seconds / 100 ticks*): Triple-chamber security relay. Chained shadows must systematically trigger floor switches `a`, `b`, and `c` to unlock blast gates `A`, `B`, and `C` in sequence.
+  - **Case 06 — Crossfire** (*18 seconds / 129 ticks*): Sentry coordination puzzle featuring two intersecting sentry patrol lanes (`01` and `02`) alongside blast door `A`. Requires precise timing and combat strikes to slip past the crossfire.
+  - **Case 07 — The Split** (*22 seconds / 157 ticks*): Dual-branch sector requiring simultaneous coordination across upper and lower wings to unlock gates `A`, `B`, and final gate `C`.
+  - **Case 08 — The Last Loop** (*26 seconds / 186 ticks*): Master sector uniting dual pressure plates (`a`, `b`) and two high-speed roaming sentinels (`01`, `02`) who must both be eliminated to unseal the final exit and complete all cases.
 - **Progressive Case Unlocking & Persistence**: Progress saves seamlessly to browser `localStorage` (`vestigraid_progress_v1`). Unlocking is strictly progressive — solve each case to access the next. Any previously unlocked sector can be replayed at will via the Sector Archive (`C` key or header button), without risk of losing progress. Includes a guarded "Reset Progress" option with explicit confirmation.
 - **Dynamic Hi-DPI Rendering**: Automatic canvas scaling using `window.devicePixelRatio` ensures pixel-sharp geometry and text across high-density displays (Retina, 4K) without layout shifts.
 - **Cross-Platform Responsive Design**: Playable with standard desktop keyboard controls or mobile touch screens via an integrated on-screen directional pad and action buttons.
@@ -234,7 +234,7 @@ The suite performs **90 automated assertions** across 10 functional test categor
    - **Case 06**: 2-loop sentry strike and gate escape.
    - **Case 07**: 4-loop dual-branch coordination and final exit run.
    - **Case 08**: 3-loop master run eliminating both sentinels, unlocking exit, asserting **"ALL CASES CLOSED"**, and verifying final case restart.
-9. **Timer System & Auto-Commit**: Asserts timer configurations across all 8 cases (30s, 40s, 50s, 70s, 60s, 65s, 75s, 90s), verifies pause freezing, and checks auto-commit behavior upon tick expiration.
+9. **Timer System & Auto-Commit**: Asserts timer configurations across all 8 cases (10s, 12s, 14s, 18s, 14s, 18s, 22s, 26s), verifies pause freezing, and checks auto-commit behavior upon tick expiration.
 10. **Branding Assets & Responsiveness**: Verifies the presence and integrity of all 14 brand files, validates DOM element loading, checks manifest/meta links, and verifies logo layout without stage overlap on both desktop (1024×768) and mobile (375×667) viewports.
 
 ---
@@ -308,4 +308,3 @@ The current version of Vestigraid provides eight complete, fully tested cases. P
 ## 📄 License
 
 No license has been specified for this project. All rights are reserved by the author. If you wish to use or adapt any portion of this codebase, please contact the developer.
-
