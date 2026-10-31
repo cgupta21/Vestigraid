@@ -144,6 +144,18 @@ Vestigraid/
 ├── og-image.png          # Social sharing and Open Graph preview image (1200x630)
 ├── site.webmanifest      # Progressive Web App manifest
 ├── README.md             # Project documentation and engineering overview
+├── js/
+│   ├── main.js           # State coordinator, RAF loop, and completion overlays
+│   ├── levels.js         # Map definitions, laser/portal/shift grids, and exit validation
+│   ├── player.js         # Player movement, boundary checks, and combat mechanics
+│   ├── enemies.js        # Patrol routines, waypoint traversal, and hit detection
+│   ├── shadows.js        # Time-loop recording, ghost playback, and pressure plates
+│   ├── timer.js          # Fixed 140ms timestep accumulator and countdown logic
+│   ├── renderer.js       # HTML5 canvas graphics, DPR scaling, and HUD rendering
+│   ├── input.js          # Keyboard and touch input queueing
+│   ├── progress.js       # Persistent localStorage progression, scores, and migrations
+│   ├── scoring.js        # Three-star performance targets and 1,000-point scoring formula
+│   └── achievements.js   # 10 classified accreditations and unlock conditions
 ├── brand/                # Vector and raster identity assets
 │   ├── logo.svg          # Light-theme vector logo
 │   ├── logo-on-dark.svg  # Dark-theme vector logo (used in game header)
@@ -223,7 +235,7 @@ node tests/suite.js
 
 ### Test Coverage Highlights
 
-The suite performs **90 automated assertions** across 10 functional test categories:
+The suite performs **331 automated assertions** across 16 comprehensive functional test categories:
 
 1. **Canvas Dimensions**: Verifies correct pixel scaling and aspect ratios across all 12 cases.
 2. **Boundary Collision & Clamping**: Verifies that pressing directions into exterior bounds or solid walls prevents illegal tile escapes and never triggers false deaths.

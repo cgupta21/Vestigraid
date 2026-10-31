@@ -26,6 +26,7 @@
 <h1><img src="brand/logo-on-dark.svg" alt="Vestigraid" class="brand-logo"></h1>
 <div class="sub">Every move leaves a mark. Every mark fights back.</div>
 </header>
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
 <main>
 <div class="stage">
 <canvas id="c"></canvas>
@@ -57,7 +58,15 @@
       <button class="modal-close" id="modal-close" type="button" aria-label="Close Case Archive">✕</button>
     </div>
     <div class="modal-sub" id="progress-summary">1 of 12 Cases Unlocked</div>
+    <div class="progress-stats-bar" id="progress-stats-bar"></div>
     <div class="case-grid" id="case-grid"></div>
+    <div class="achievements-section" id="achievements-section">
+      <div class="achievements-header">
+        <h3>Classified Accreditations (Achievements)</h3>
+        <span id="achievements-count" class="achievements-count">0 / 10 Unlocked</span>
+      </div>
+      <div class="achievements-grid" id="achievements-grid"></div>
+    </div>
     <div class="modal-actions">
       <div class="modal-actions-left">
         <button class="btn btn-primary" id="btn-continue-case" type="button">Continue</button>

@@ -1392,6 +1392,297 @@ async function runTests() {
     const wonAfterC12Legit = await evaluate('won');
     assert(wonAfterC12Legit === true, 'Case 12 legitimately completed when all enemies killed and all doors open, triggering game victory');
 
+    console.log('\n=== TEST 13: Scoring Formula, Three-Star Ratings & Calibration ===');
+    // 1. Scoring Bounds & Breakdown
+    const perfectBreakdown = await evaluate('calculateScoreBreakdown(0, { loops: 2, totalTicks: 22, deaths: 0, completed: true })');
+    assert(perfectBreakdown.total === 1000, 'Perfect Case 01 run awards exactly 1,000 points', `total=${perfectBreakdown.total}`);
+    assert(perfectBreakdown.base === 400, 'Base clearance awards 400 points');
+    assert(perfectBreakdown.loopEfficiency === 350, 'Optimal loop efficiency awards 350 points');
+    assert(perfectBreakdown.timeEfficiency === 250, 'Optimal time efficiency awards 250 points');
+    assert(perfectBreakdown.deathPenalty === 0, 'Zero deaths incur zero penalty');
+    assert(perfectBreakdown.band === 'Excellent', '1,000 score classified in Excellent band');
+
+    // Inefficient run is clamped to at least 400 upon completion
+    const inefficientBreakdown = await evaluate('calculateScoreBreakdown(0, { loops: 8, totalTicks: 100, deaths: 10, completed: true })');
+    assert(inefficientBreakdown.total === 400, 'Completed run score is clamped to minimum 400 points');
+    assert(inefficientBreakdown.total <= 1000, 'Score does not exceed 1000 points');
+
+    // Uncompleted case returns 0
+    const uncompletedScore = await evaluate('calculateScore(0, { completed: false })');
+    assert(uncompletedScore === 0, 'Uncompleted case awards 0 score');
+
+    // Repeatable scoring: identical runs produce identical score
+    const runA = await evaluate('calculateScore(3, { loops: 2, totalTicks: 28, deaths: 0, completed: true })');
+    const runB = await evaluate('calculateScore(3, { loops: 2, totalTicks: 28, deaths: 0, completed: true })');
+    assert(runA === runB && runA > 900, 'Identical performance deterministically produces identical scores');
+
+    // Best Score preservation
+    await evaluate('resetProgress()');
+    await evaluate('recordCaseVictory(0, { loops: 2, totalTicks: 22, deaths: 0 })');
+    let pAfterGood = await evaluate('progress');
+    assert(pAfterGood.scores[0] === 1000, 'First run records best score 1,000');
+
+    // Worse replay does NOT downgrade best score
+    await evaluate('recordCaseVictory(0, { loops: 4, totalTicks: 50, deaths: 2 })');
+    let pAfterWorse = await evaluate('progress');
+    assert(pAfterWorse.scores[0] === 1000, 'Worse replay preserves previous best score of 1,000');
+
+    // Better replay replaces previous best score
+    await evaluate('resetProgress()');
+    await evaluate('recordCaseVictory(1, { loops: 4, totalTicks: 60, deaths: 1 })');
+    const firstScoreC2 = (await evaluate('progress')).scores[1];
+    await evaluate('recordCaseVictory(1, { loops: 3, totalTicks: 32, deaths: 0 })');
+    const betterScoreC2 = (await evaluate('progress')).scores[1];
+    assert(betterScoreC2 > firstScoreC2, 'Better replay replaces previous best score');
+
+    // 2. Star Rating Criteria
+    // Case 01 targets: parLoops=2, max3StarTicks=32
+    assert(await evaluate('calculateStarRating(0, { loops: 2, totalTicks: 25, deaths: 0, completed: true })') === 3, 'Optimal run awards 3 stars');
+    assert(await evaluate('calculateStarRating(0, { loops: 2, totalTicks: 25, deaths: 1, completed: true })') === 2, 'One death downgrades rating from 3 to 2 stars');
+    assert(await evaluate('calculateStarRating(0, { loops: 3, totalTicks: 30, deaths: 0, completed: true })') === 2, 'One extra loop awards 2 stars');
+    assert(await evaluate('calculateStarRating(0, { loops: 5, totalTicks: 70, deaths: 3, completed: true })') === 1, 'High loops and deaths still awards 1 star on completion');
+    assert(await evaluate('calculateStarRating(0, { completed: false })') === 0, 'Uncompleted case awards 0 stars');
+
+    // Stars upgrade and preservation
+    await evaluate('resetProgress()');
+    await evaluate('recordCaseVictory(2, { loops: 3, totalTicks: 50, deaths: 1 })'); // 2 stars
+    assert((await evaluate('progress')).stars[2] === 2, 'First run records 2 stars');
+    await evaluate('recordCaseVictory(2, { loops: 2, totalTicks: 28, deaths: 0 })'); // 3 stars
+    assert((await evaluate('progress')).stars[2] === 3, 'Improved replay upgrades to 3 stars');
+    await evaluate('recordCaseVictory(2, { loops: 4, totalTicks: 60, deaths: 2 })'); // 1 star
+    assert((await evaluate('progress')).stars[2] === 3, 'Worse replay preserves 3 stars');
+
+    // Par values configured across all 12 cases
+    const targetsLen = await evaluate('CASE_TARGETS.length');
+    assert(targetsLen === 12, 'Case performance targets configured for all 12 cases');
+
+    // Case 05 and Case 07 calibration consistency checks
+    const c5Target = await evaluate('CASE_TARGETS[4]');
+    const c5LimitTicks = await evaluate('Math.round((LV[4].timeLimit * 1000) / TICK)');
+    assert(c5Target.parTicks === 35 && c5Target.max3StarTicks === 45, 'Case 05 calibrated to parTicks=35, max3StarTicks=45');
+    assert(c5Target.max3StarTicks < c5LimitTicks, `Case 05 3-star max ticks (${c5Target.max3StarTicks}) is strictly within time limit (${c5LimitTicks} ticks)`);
+
+    const c7Target = await evaluate('CASE_TARGETS[6]');
+    const c7LimitTicks = await evaluate('Math.round((LV[6].timeLimit * 1000) / TICK)');
+    assert(c7Target.parTicks === 45 && c7Target.max3StarTicks === 55, 'Case 07 calibrated to parTicks=45, max3StarTicks=55');
+    assert(c7Target.max3StarTicks < c7LimitTicks, `Case 07 3-star max ticks (${c7Target.max3StarTicks}) is strictly within time limit (${c7LimitTicks} ticks)`);
+
+    // Universal invariant: for all 12 cases, max3StarTicks must be strictly less than the time limit
+    const allWithinLimits = await evaluate(`
+      CASE_TARGETS.every((ct, idx) => {
+        const limTicks = Math.round((LV[idx].timeLimit * 1000) / TICK);
+        return ct.max3StarTicks < limTicks && ct.parTicks <= ct.max3StarTicks;
+      })
+    `);
+    assert(allWithinLimits === true, 'All 12 cases have 3-star targets strictly within their respective case time limits');
+
+    // Audit 1 & 2: Death tracking integrity across loops, deaths, timer expirations & resets
+    await evaluate('loadLevel(0, true)');
+    assert(await evaluate('getCaseDeaths()') === 0, 'New case session starts with 0 deaths');
+    await evaluate('die()');
+    assert(await evaluate('getCaseDeaths()') === 1, 'die() increments caseDeaths to 1');
+    // Commit loop with R
+    await evaluate('pos = { x: 2, y: 1 }; commit(false);');
+    assert(await evaluate('getCaseDeaths()') === 1, 'caseDeaths preserved across shadow commit');
+    assert(await evaluate('loops') === 2, 'Loop count incremented to 2');
+    // Auto-commit on timer expiration
+    await evaluate('commit(true)');
+    assert(await evaluate('getCaseDeaths()') === 1, 'caseDeaths preserved across timer expiration auto-commit');
+    assert(await evaluate('loops') === 3, 'Loop count incremented to 3');
+    // Pressing Z resets case completely (erasing shadows and restarting from loop 1)
+    await evaluate('loadLevel(0, true)');
+    assert(await evaluate('getCaseDeaths()') === 0, 'Full level reset (Z) resets session deaths to 0');
+    assert(await evaluate('loops') === 1, 'Full level reset (Z) resets loops to 1');
+    assert((await evaluate('ghosts.length')) === 0, 'Full level reset (Z) completely clears recorded shadows (no unfair advantage)');
+
+    // Multi-loop total elapsed ticks tracking across loops, deaths, timer auto-commits & resets
+    await evaluate('loadLevel(0, true)');
+    assert(await evaluate('getCaseTotalTicks()') === 0, 'New case session starts with 0 total elapsed ticks');
+    await evaluate(`
+      tick(); tick(); tick(); tick(); tick();
+      pos = { x: 2, y: 1 };
+      commit(false);
+    `);
+    assert(await evaluate('getCaseTotalTicks()') === 5, 'Total elapsed ticks correctly records 5 ticks from Loop 1 commit');
+    assert(await evaluate('loops') === 2, 'In Loop 2 after commit');
+
+    await evaluate(`
+      tick(); tick(); tick();
+      die();
+    `);
+    assert(await evaluate('getCaseTotalTicks()') === 8, 'Total elapsed ticks accumulates ticks before death (5 + 3 = 8)');
+    assert(await evaluate('getCaseDeaths()') === 1, 'caseDeaths incremented to 1');
+
+    await evaluate(`
+      tick(); tick(); tick(); tick();
+      commit(true);
+    `);
+    assert(await evaluate('getCaseTotalTicks()') === 12, 'Total elapsed ticks accumulates ticks on timer auto-commit (8 + 4 = 12)');
+
+    await evaluate(`
+      tick(); tick(); tick();
+      win();
+    `);
+    const lastVictoryStats = await evaluate('progress.caseStats[0]');
+    assert(lastVictoryStats && lastVictoryStats.totalTicks === 15, 'win() computes and records actual total elapsed ticks across all loops and deaths (12 + 3 = 15)');
+
+    await evaluate('loadLevel(0, true)');
+    assert(await evaluate('getCaseTotalTicks()') === 0, 'Full level reset (Z) resets total elapsed ticks to 0');
+
+    // Coherent Personal Best Records: stars, score, and caseStats strictly originate from the same single attempt
+    await evaluate('resetProgress()');
+    // Attempt 1: 3-Star clean solve (2 loops, 25 ticks, 0 deaths) -> awards 3 stars, 1000 score
+    await evaluate('recordCaseVictory(0, { loops: 2, totalTicks: 25, deaths: 0 })');
+    let pRecord1 = await evaluate('progress');
+    assert(pRecord1.stars[0] === 3, 'Attempt 1 establishes 3 stars');
+    assert(pRecord1.scores[0] === 1000, 'Attempt 1 establishes 1000 score');
+    assert(pRecord1.caseStats[0].deaths === 0, 'Attempt 1 records 0 deaths');
+    assert(pRecord1.caseStats[0].totalTicks === 25, 'Attempt 1 records 25 total ticks');
+
+    // Attempt 2: Replay with 1 death (2 stars)
+    // A 2-star replay must NOT overwrite or contaminate the 3-star personal best
+    await evaluate('recordCaseVictory(0, { loops: 3, totalTicks: 30, deaths: 1 })');
+    let pRecordAfterWorseReplay = await evaluate('progress');
+    assert(pRecordAfterWorseReplay.stars[0] === 3, 'Worse star replay preserves 3-star record');
+    assert(pRecordAfterWorseReplay.scores[0] === 1000, 'Worse star replay preserves 1000 score');
+    assert(pRecordAfterWorseReplay.caseStats[0].deaths === 0, 'Worse star replay does not overwrite caseStats with 1 death');
+    assert(pRecordAfterWorseReplay.caseStats[0].totalTicks === 25, 'Worse star replay caseStats remains strictly coherent with 3-star run');
+
+    // Attempt 3: Faster 3-Star replay (2 loops, 20 ticks, 0 deaths) -> upgrades personal best cleanly
+    await evaluate('recordCaseVictory(0, { loops: 2, totalTicks: 20, deaths: 0 })');
+    let pRecordAfterBetterReplay = await evaluate('progress');
+    assert(pRecordAfterBetterReplay.stars[0] === 3, 'Better 3-star replay keeps 3 stars');
+    assert(pRecordAfterBetterReplay.scores[0] === 1000, 'Better 3-star replay maintains 1000 score');
+    assert(pRecordAfterBetterReplay.caseStats[0].totalTicks === 20, 'Better 3-star replay updates totalTicks to 20');
+    assert(pRecordAfterBetterReplay.caseStats[0].deaths === 0, 'Better 3-star replay maintains 0 deaths');
+
+    console.log('\n=== TEST 14: Achievement System Verification & Unlocks ===');
+    const allAchs = await evaluate('ACHIEVEMENTS');
+    assert(allAchs.length === 10, 'Exactly 10 achievements registered in system');
+    assert(allAchs.every(a => a.id && a.name && a.desc && a.icon), 'All achievements have valid id, name, description, and icon');
+
+    // Fresh player has 0 achievements
+    await evaluate('resetProgress()');
+    assert((await evaluate('progress.achievements.length')) === 0, 'Fresh player has 0 achievements');
+
+    // 1. "First Echo" unlocks on Case 01 completion
+    await evaluate('recordCaseVictory(0, { loops: 2, totalTicks: 22, deaths: 0 })');
+    let achsC1 = await evaluate('progress.achievements');
+    assert(achsC1.includes('first_echo'), 'First Echo unlocks upon completing Case 01');
+
+    // 2. "Perfect Timing" unlocks on 3 stars
+    assert(achsC1.includes('perfect_timing'), 'Perfect Timing unlocks upon achieving 3 stars');
+
+    // 3. "Shadow Master" unlocks with loops <= parLoops
+    assert(achsC1.includes('shadow_master'), 'Shadow Master unlocks using verified minimum loops');
+
+    // 4. "Untouchable" unlocks on flawless completion (0 deaths)
+    assert(achsC1.includes('untouchable'), 'Untouchable unlocks on 0 deaths run');
+
+    // Untouchable does NOT unlock when death occurs
+    await evaluate('resetProgress()');
+    await evaluate('recordCaseVictory(0, { loops: 2, totalTicks: 22, deaths: 1 })');
+    let achsWithDeath = await evaluate('progress.achievements');
+    assert(!achsWithDeath.includes('untouchable'), 'Untouchable does NOT unlock when player dies');
+
+    // Case-specific achievements
+    await evaluate('recordCaseVictory(8, { loops: 3, totalTicks: 25, deaths: 0 })');
+    assert((await evaluate('progress.achievements')).includes('laser_runner'), 'Laser Runner unlocks on Case 09 completion');
+
+    await evaluate('recordCaseVictory(9, { loops: 3, totalTicks: 25, deaths: 0 })');
+    assert((await evaluate('progress.achievements')).includes('rift_walker'), 'Rift Walker unlocks on Case 10 completion');
+
+    await evaluate('recordCaseVictory(10, { loops: 3, totalTicks: 25, deaths: 0 })');
+    assert((await evaluate('progress.achievements')).includes('shift_controller'), 'Shift Controller unlocks on Case 11 completion');
+
+    await evaluate('recordCaseVictory(11, { loops: 4, totalTicks: 25, deaths: 0 })');
+    assert((await evaluate('progress.achievements')).includes('paradox_solved'), 'Paradox Solved unlocks on Case 12 completion');
+
+    // Replay does not duplicate achievements
+    const achsBeforeDup = (await evaluate('progress.achievements')).length;
+    await evaluate('recordCaseVictory(8, { loops: 3, totalTicks: 25, deaths: 0 })');
+    const achsAfterDup = (await evaluate('progress.achievements')).length;
+    assert(achsBeforeDup === achsAfterDup, 'Replaying case does not duplicate achievements');
+
+    // 5. "Perfectionist" unlocks when all 12 cases have 3 stars
+    await evaluate('resetProgress()');
+    for (let c = 0; c < 11; c++) {
+      await evaluate(`recordCaseVictory(${c}, { loops: 2, totalTicks: 20, deaths: 0 })`);
+    }
+    assert(!(await evaluate('progress.achievements')).includes('perfectionist'), 'Perfectionist does not unlock with only 11 cases at 3 stars');
+    await evaluate('recordCaseVictory(11, { loops: 4, totalTicks: 25, deaths: 0 })');
+    assert((await evaluate('progress.achievements')).includes('perfectionist'), 'Perfectionist unlocks when all 12 cases reach 3 stars');
+
+    // 6. "Master of Vestigraid" unlocks when all 12 cases and all achievements are earned
+    assert((await evaluate('progress.achievements')).includes('master_of_vestigraid'), 'Master of Vestigraid unlocks when all cases and achievements are completed');
+
+    console.log('\n=== TEST 15: Upgraded Completion Screen, Toast & Sector Archive UI ===');
+    // Toast notification function works without errors
+    await evaluate('showAchievementToast(ACHIEVEMENTS[0])');
+    const toastCount = await evaluate('document.querySelectorAll(".achievement-toast").length');
+    assert(toastCount > 0, 'Achievement toast rendered in DOM');
+
+    // Completion overlay on normal case (Case 01)
+    await evaluate('loadLevel(0, true)');
+    await new Promise(r => setTimeout(r, 40));
+    await evaluate(`(() => {
+      ghosts.push([{ x: 2, y: 3, f: [1, 0], s: 0 }]);
+      pos = { x: 8, y: 2 };
+      tick();
+    })()`);
+    const ovDisplayAfterWin = await evaluate('document.getElementById("ov").style.display');
+    const ovHtmlAfterWin = await evaluate('document.getElementById("ov").innerHTML');
+    assert(ovDisplayAfterWin === 'flex', 'Case completion overlay displayed after case victory');
+    assert(ovHtmlAfterWin.includes('CASE 01 COMPLETED'), 'Completion overlay displays case number');
+    assert(ovHtmlAfterWin.includes('ov-stars'), 'Completion overlay renders animated star rating');
+    assert(ovHtmlAfterWin.includes('1,000'), 'Completion overlay renders score out of 1,000');
+    assert(ovHtmlAfterWin.includes('score-breakdown-grid'), 'Completion overlay displays score breakdown');
+    assert(ovHtmlAfterWin.includes('btn-next-case'), 'Completion overlay includes Next Case button');
+
+    // Pressing a move key dismisses the completion overlay smoothly
+    await tap('ArrowDown', 'ArrowDown');
+    const ovDismissed = await evaluate('document.getElementById("ov").style.display === "none"');
+    assert(ovDismissed, 'Tapping movement key automatically dismisses completion overlay for smooth gameplay');
+
+    // Open Case Selection Archive Modal
+    await evaluate('openCaseModal()');
+    const statsBarHtml = await evaluate('document.getElementById("progress-stats-bar").innerHTML');
+    assert(statsBarHtml.includes('Stars:'), 'Case Archive modal renders overall Stars stat pill');
+    assert(statsBarHtml.includes('Score:'), 'Case Archive modal renders overall Score stat pill');
+    assert(statsBarHtml.includes('Accreditations:'), 'Case Archive modal renders overall Accreditations stat pill');
+
+    // Achievements drawer inside modal
+    const achCardsCount = await evaluate('document.querySelectorAll(".ach-card").length');
+    assert(achCardsCount === 10, 'Case Archive renders all 10 achievements in achievements drawer');
+    await evaluate('closeCaseModal()');
+
+    console.log('\n=== TEST 16: LocalStorage Schema Migration & Preservation ===');
+    // Migration: Legacy save without scores/stars/achievements
+    const legacySave = JSON.stringify({
+      highestUnlocked: 4,
+      completedCases: [0, 1, 2, 3],
+      gameCompleted: false,
+      lastPlayed: 3
+    });
+    await evaluate(`localStorage.setItem(STORAGE_KEY || 'vestigraid_progress_v1', '${legacySave}')`);
+    await evaluate('progress = loadProgress()');
+    const migratedProg = await evaluate('progress');
+    assert(migratedProg.highestUnlocked === 4, 'Migrated progress preserves highestUnlocked = 4');
+    assert(migratedProg.completedCases.length === 4, 'Migrated progress preserves completedCases');
+    assert(migratedProg.stars[0] >= 1, 'Legacy completed case 0 safely assigned default star rating');
+    assert(migratedProg.scores[0] >= 400, 'Legacy completed case 0 safely assigned default base score');
+    assert(Array.isArray(migratedProg.achievements), 'Legacy progress safely initializes achievements array');
+
+    // Dynamic total calculations
+    assert(await evaluate('getTotalStars(progress)') >= 4, 'getTotalStars calculates sum of earned stars');
+    assert(await evaluate('getTotalScore(progress)') >= 1600, 'getTotalScore calculates sum of case scores');
+
+    // Clean reset restores fresh progress
+    await evaluate('progress = resetProgress()');
+    assert((await evaluate('getTotalStars(progress)')) === 0, 'Reset progress clears all stars to 0');
+    assert((await evaluate('getTotalScore(progress)')) === 0, 'Reset progress clears total score to 0');
+    assert((await evaluate('getUnlockedAchievements(progress).length')) === 0, 'Reset progress clears all achievements');
+
     proc.kill();
 
     console.log('\n========================================');

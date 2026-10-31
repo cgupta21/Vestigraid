@@ -71,13 +71,31 @@ import {
 } from './input.js';
 import {
   STORAGE_KEY,
+  TOTAL_CASES,
+  getInitialProgress,
   loadProgress,
   saveProgress,
+  recordCaseVictory,
   markCaseCompleted,
   isCaseUnlocked,
   isCaseCompleted,
+  getTotalStars,
+  getTotalScore,
+  getUnlockedAchievements,
   resetProgress
 } from './progress.js';
+import {
+  CASE_TARGETS,
+  calculateStarRating,
+  calculateScore,
+  calculateScoreBreakdown,
+  getScoreBand
+} from './scoring.js';
+import {
+  ACHIEVEMENTS,
+  getAchievement,
+  evaluateAchievements
+} from './achievements.js';
 
 // DOM selectors
 const $ = id => document.getElementById(id);
@@ -95,10 +113,37 @@ let won = false;
 let paused = false;
 let flash = 0;
 let progress = loadProgress();
+let caseDeaths = 0;
+let caseTotalTicks = 0;
 
 function say(s) {
   const msgEl = $('msg');
   if (msgEl) msgEl.textContent = s;
+}
+
+export function showAchievementToast(achievement) {
+  if (!achievement) return;
+  const container = $('toast-container') || document.body;
+  const toast = document.createElement('div');
+  toast.className = 'achievement-toast';
+  toast.setAttribute('role', 'status');
+  toast.innerHTML = `
+    <span class="toast-icon">${achievement.icon}</span>
+    <div class="toast-content">
+      <span class="toast-title">Accreditation Unlocked</span>
+      <span class="toast-name">${achievement.name}</span>
+      <span class="toast-desc">${achievement.desc}</span>
+    </div>
+  `;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(110%)';
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 350);
+  }, 3800);
 }
 
 function syncUI() {
@@ -158,6 +203,20 @@ export function renderCaseGrid() {
     progressSummary.textContent = `${unlockedCount} of ${LV.length} Cases Unlocked (${completedCount} Solved)`;
   }
 
+  // Render Overall Progress Stats Bar
+  const statsBar = $('progress-stats-bar');
+  if (statsBar) {
+    const totalStars = getTotalStars(progress);
+    const totalScore = getTotalScore(progress);
+    const unlockedAchs = getUnlockedAchievements(progress).length;
+    statsBar.innerHTML = `
+      <div class="stat-pill"><span class="stat-pill-label">Cases:</span><span class="stat-pill-val">${completedCount} / 12</span></div>
+      <div class="stat-pill"><span class="stat-pill-label">Stars:</span><span class="stat-pill-val">${totalStars} / 36 ★</span></div>
+      <div class="stat-pill"><span class="stat-pill-label">Score:</span><span class="stat-pill-val">${totalScore.toLocaleString()} / 12,000</span></div>
+      <div class="stat-pill"><span class="stat-pill-label">Accreditations:</span><span class="stat-pill-val">${unlockedAchs} / 10 🏆</span></div>
+    `;
+  }
+
   LV.forEach((lvlDef, idx) => {
     const card = document.createElement('button');
     card.type = 'button';
@@ -186,6 +245,37 @@ export function renderCaseGrid() {
       infoText = `Classified — Complete Case ${String(idx).padStart(2, '0')} to unlock`;
     }
 
+    // Performance indicators (Stars, Score, Replay Tag, Achievement)
+    let perfHtml = '';
+    if (completed) {
+      const bestStars = progress.stars?.[idx] || 1;
+      const bestScore = progress.scores?.[idx] || 400;
+      const starsDisplay = [1, 2, 3].map(s => s <= bestStars ? '★' : '<span class="empty">☆</span>').join('');
+      const improveTag = bestStars < 3 ? '<span class="tag-improve">Replay for ★★★</span>' : '';
+
+      let caseAch = '';
+      if (idx === 0 && progress.achievements?.includes('first_echo')) caseAch = '<span class="card-ach-badge" title="First Echo">⚡</span>';
+      if (idx === 8 && progress.achievements?.includes('laser_runner')) caseAch = '<span class="card-ach-badge" title="Laser Runner">🔴</span>';
+      if (idx === 9 && progress.achievements?.includes('rift_walker')) caseAch = '<span class="card-ach-badge" title="Rift Walker">🌀</span>';
+      if (idx === 10 && progress.achievements?.includes('shift_controller')) caseAch = '<span class="card-ach-badge" title="Shift Controller">⚙️</span>';
+      if (idx === 11 && progress.achievements?.includes('paradox_solved')) caseAch = '<span class="card-ach-badge" title="Paradox Solved">♾️</span>';
+
+      perfHtml = `
+        <div class="card-perf-row">
+          <div class="card-stars">${starsDisplay}${caseAch}</div>
+          <div class="card-score">${bestScore} pts</div>
+          ${improveTag}
+        </div>
+      `;
+    } else if (unlocked) {
+      perfHtml = `
+        <div class="card-perf-row">
+          <div class="card-stars"><span class="empty">☆☆☆</span></div>
+          <div class="card-score">—</div>
+        </div>
+      `;
+    }
+
     card.innerHTML = `
       <div class="case-card-top">
         <span class="case-card-num">CASE ${String(idx + 1).padStart(2, '0')}</span>
@@ -193,6 +283,7 @@ export function renderCaseGrid() {
       </div>
       <div class="case-card-title">${lvlDef.n}</div>
       <div class="case-card-info">${infoText}</div>
+      ${perfHtml}
     `;
 
     if (unlocked) {
@@ -204,6 +295,29 @@ export function renderCaseGrid() {
 
     caseGrid.appendChild(card);
   });
+
+  // Render Achievements Drawer in Modal
+  const achCountEl = $('achievements-count');
+  const achGridEl = $('achievements-grid');
+  if (achCountEl && achGridEl) {
+    const unlockedIds = new Set(getUnlockedAchievements(progress));
+    achCountEl.textContent = `${unlockedIds.size} / ${ACHIEVEMENTS.length} Unlocked`;
+    achGridEl.innerHTML = '';
+
+    ACHIEVEMENTS.forEach(ach => {
+      const isAchUnlocked = unlockedIds.has(ach.id);
+      const achCard = document.createElement('div');
+      achCard.className = `ach-card ${isAchUnlocked ? 'unlocked' : 'locked'}`;
+      achCard.innerHTML = `
+        <span class="ach-icon">${ach.icon}</span>
+        <div class="ach-info">
+          <span class="ach-name">${ach.name} ${isAchUnlocked ? '✓' : '🔒'}</span>
+          <span class="ach-desc">${ach.desc}</span>
+        </div>
+      `;
+      achGridEl.appendChild(achCard);
+    });
+  }
 }
 
 export function loadLevel(i, force = false) {
@@ -215,6 +329,8 @@ export function loadLevel(i, force = false) {
 
   lv = i;
   won = false;
+  caseDeaths = 0;
+  caseTotalTicks = 0;
 
   const parsed = parseLevelMap(i);
   grid = parsed.grid;
@@ -383,6 +499,8 @@ export function tick() {
 }
 
 export function die() {
+  caseDeaths++;
+  caseTotalTicks += getTick();
   say('Caught. That loop is erased — try again.');
   flash = 8;
   clearInput();
@@ -396,6 +514,7 @@ export function commit(auto) {
     say('Move first. An empty loop leaves no shadow.');
     return;
   }
+  caseTotalTicks += getTick();
   loops++;
   clearInput();
   startRound();
@@ -404,20 +523,158 @@ export function commit(auto) {
 }
 
 export function win() {
-  saveLevelHistory(lv, getRecording());
-  progress = markCaseCompleted(lv);
-  if (lv === LV.length - 1) {
+  const completedCase = lv;
+  saveLevelHistory(completedCase, getRecording());
+
+  const totalElapsedTicks = caseTotalTicks + getTick();
+  caseTotalTicks = totalElapsedTicks;
+  const result = recordCaseVictory(completedCase, {
+    loops,
+    totalTicks: totalElapsedTicks,
+    deaths: caseDeaths
+  });
+  progress = result.currentProgress;
+
+  if (result.newlyUnlocked && result.newlyUnlocked.length > 0) {
+    for (const ach of result.newlyUnlocked) {
+      showAchievementToast(ach);
+    }
+  }
+
+  if (completedCase === LV.length - 1) {
     won = true;
-    showOverlay('ALL CASES CLOSED', 'You completed all 12 sectors and broke the loop forever.<br>Loops on final case: ' + loops, true);
+    showCaseCompletionOverlay(completedCase, result, true);
     return;
   }
+
   loadLevelNext();
+  showCaseCompletionOverlay(completedCase, result, false);
 }
 
 export function loadLevelNext() {
   const nextLv = lv + 1;
   loadLevel(nextLv);
   say('Case ' + String(nextLv + 1).padStart(2, '0') + ' — ' + LV[nextLv].n);
+}
+
+export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
+  const ovEl = $('ov');
+  if (!ovEl) return;
+  ovEl.style.display = 'flex';
+
+  const lvlDef = LV[caseIndex];
+  const stars = result.stars || 0;
+  const starsHtml = [1, 2, 3].map(i => `<span class="ov-star ${i <= stars ? 'earned' : ''}">★</span>`).join('');
+  const timeSec = (result.runStats.totalTicks * (TICK / 1000)).toFixed(1);
+
+  let achHtml = '';
+  if (result.newlyUnlocked && result.newlyUnlocked.length > 0) {
+    const achList = result.newlyUnlocked.map(a => `<span>${a.icon} <strong>${a.name}</strong></span>`).join(' · ');
+    achHtml = `<div class="ov-achievements">🏆 Accreditation: ${achList}</div>`;
+  }
+
+  const bestPill = result.isNewBestScore ? '<div class="new-best-pill">★ NEW PERSONAL BEST</div>' : '';
+
+  if (isGrandFinal) {
+    ovEl.innerHTML = `
+      <img src="brand/icon.svg" alt="Vestigraid" class="ov-icon">
+      <h2>ALL CASES CLOSED</h2>
+      <p>You completed all 12 sectors and broke the loop forever.<br>Loops on final case: ${result.runStats.loops}</p>
+      <div class="ov-stars">${starsHtml}</div>
+      <div class="ov-score-row">
+        <span class="ov-score-val">${result.score}</span>
+        <span class="ov-score-max">/ 1,000</span>
+        <span class="ov-score-band">${result.breakdown.band}</span>
+      </div>
+      ${bestPill}
+      <div class="score-breakdown-grid">
+        <div class="breakdown-row"><span class="breakdown-label">Base Clearance:</span><span class="breakdown-val">+${result.breakdown.base} pts</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Loop Efficiency:</span><span class="breakdown-val">+${result.breakdown.loopEfficiency} pts (${result.runStats.loops} loops)</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Time Efficiency:</span><span class="breakdown-val">+${result.breakdown.timeEfficiency} pts (${timeSec}s)</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Casualty Penalty:</span><span class="breakdown-val">-${result.breakdown.deathPenalty} pts (${result.runStats.deaths} deaths)</span></div>
+      </div>
+      ${achHtml}
+      <div class="ov-btns">
+        <button class="btn" id="ag">Play again</button>
+        <button class="btn" id="ov-archive">Case Archive</button>
+        <button class="btn" id="re-last">Restart final case</button>
+      </div>
+    `;
+
+    $('ag').onclick = () => {
+      ovEl.style.display = 'none';
+      won = false;
+      resetHistory();
+      clearInput();
+      paused = false;
+      loadLevel(0);
+    };
+    if ($('ov-archive')) {
+      $('ov-archive').onclick = () => {
+        ovEl.style.display = 'none';
+        won = false;
+        openCaseModal();
+      };
+    }
+    if ($('re-last')) {
+      $('re-last').onclick = () => {
+        ovEl.style.display = 'none';
+        won = false;
+        clearInput();
+        paused = false;
+        loadLevel(LV.length - 1);
+      };
+    }
+  } else {
+    ovEl.innerHTML = `
+      <div class="ov-card">
+        <span class="ov-tag">CASE ${String(caseIndex + 1).padStart(2, '0')} COMPLETED</span>
+        <h2 class="ov-title">${lvlDef.n}</h2>
+        <div class="ov-stars">${starsHtml}</div>
+        <div class="ov-score-row">
+          <span class="ov-score-val">${result.score}</span>
+          <span class="ov-score-max">/ 1,000</span>
+          <span class="ov-score-band">${result.breakdown.band}</span>
+        </div>
+        ${bestPill}
+        <div class="score-breakdown-grid">
+          <div class="breakdown-row"><span class="breakdown-label">Base Clearance:</span><span class="breakdown-val">+${result.breakdown.base} pts</span></div>
+          <div class="breakdown-row"><span class="breakdown-label">Loop Efficiency:</span><span class="breakdown-val">+${result.breakdown.loopEfficiency} pts (${result.runStats.loops} loops)</span></div>
+          <div class="breakdown-row"><span class="breakdown-label">Time Efficiency:</span><span class="breakdown-val">+${result.breakdown.timeEfficiency} pts (${timeSec}s)</span></div>
+          <div class="breakdown-row"><span class="breakdown-label">Casualty Penalty:</span><span class="breakdown-val">-${result.breakdown.deathPenalty} pts (${result.runStats.deaths} deaths)</span></div>
+        </div>
+        ${achHtml}
+        <div class="ov-prev-best">Previous Best: ${result.prevScore} pts (${result.prevStars}★)</div>
+        <div class="ov-action-btns">
+          <button class="btn btn-primary" id="btn-next-case">Next Case</button>
+          <button class="btn" id="btn-retry-case">Retry Case</button>
+          <button class="btn" id="btn-ov-archive">Case Archive</button>
+        </div>
+      </div>
+    `;
+
+    const btnNext = $('btn-next-case');
+    if (btnNext) {
+      btnNext.onclick = () => {
+        ovEl.style.display = 'none';
+        say('Case ' + String(lv + 1).padStart(2, '0') + ' — ' + LV[lv].n);
+      };
+    }
+    const btnRetry = $('btn-retry-case');
+    if (btnRetry) {
+      btnRetry.onclick = () => {
+        ovEl.style.display = 'none';
+        loadLevel(caseIndex);
+      };
+    }
+    const btnArchive = $('btn-ov-archive');
+    if (btnArchive) {
+      btnArchive.onclick = () => {
+        ovEl.style.display = 'none';
+        openCaseModal();
+      };
+    }
+  }
 }
 
 export function showOverlay(header, body, canPlayAgain) {
@@ -512,6 +769,7 @@ function exposeTestCompatibility() {
   window.cv = cv;
   window.$ = $;
   window.DIRS = DIRS;
+  window.TICK = TICK;
 
   Object.defineProperty(window, 'pos', {
     get: () => getPlayerPos(),
@@ -617,6 +875,29 @@ function exposeTestCompatibility() {
   window.getActivePlates = (g, gh, p, tt) => getActivePlates(g || grid, gh || getGhosts(), p || getPlayerPos(), tt !== undefined ? tt : getTick());
   window.renderCurrentFrame = renderCurrentFrame;
   window.isExitVisualLocked = isExitVisualLocked;
+
+  // Scoring & Achievements compatibility
+  window.STORAGE_KEY = STORAGE_KEY;
+  window.CASE_TARGETS = CASE_TARGETS;
+  window.ACHIEVEMENTS = ACHIEVEMENTS;
+  window.calculateStarRating = calculateStarRating;
+  window.calculateScore = calculateScore;
+  window.calculateScoreBreakdown = calculateScoreBreakdown;
+  window.getScoreBand = getScoreBand;
+  window.evaluateAchievements = evaluateAchievements;
+  window.getAchievement = getAchievement;
+  window.recordCaseVictory = (caseIdx, stats) => {
+    const res = recordCaseVictory(caseIdx, stats);
+    progress = res.currentProgress;
+    return res;
+  };
+  window.getTotalStars = () => getTotalStars(progress);
+  window.getTotalScore = () => getTotalScore(progress);
+  window.getUnlockedAchievements = () => getUnlockedAchievements(progress);
+  window.getCaseDeaths = () => caseDeaths;
+  window.getCaseTotalTicks = () => (won ? caseTotalTicks : caseTotalTicks + getTick());
+  window.showAchievementToast = showAchievementToast;
+  window.showCaseCompletionOverlay = showCaseCompletionOverlay;
 }
 
 export function initGame() {
@@ -624,8 +905,20 @@ export function initGame() {
   progress = loadProgress();
 
   initInput({
-    onStartMove: () => { if (!paused && !isModalOpen()) started = true; },
-    onStrike: () => { if (!paused && !isModalOpen()) started = true; },
+    onStartMove: () => {
+      const ovEl = $('ov');
+      if (ovEl && ovEl.style.display !== 'none' && !won) {
+        ovEl.style.display = 'none';
+      }
+      if (!paused && !isModalOpen()) started = true;
+    },
+    onStrike: () => {
+      const ovEl = $('ov');
+      if (ovEl && ovEl.style.display !== 'none' && !won) {
+        ovEl.style.display = 'none';
+      }
+      if (!paused && !isModalOpen()) started = true;
+    },
     onCommit: () => { if (!isModalOpen()) commit(false); },
     onReset: () => { if (!isModalOpen()) loadLevel(lv); },
     onPause: () => {
@@ -641,6 +934,16 @@ export function initGame() {
     isWon: () => won,
     isStarted: () => started,
     isModalOpen: () => isModalOpen()
+  });
+
+  window.addEventListener('keydown', (e) => {
+    const ovEl = $('ov');
+    if (ovEl && ovEl.style.display !== 'none' && !won) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
+        ovEl.style.display = 'none';
+        say('Case ' + String(lv + 1).padStart(2, '0') + ' — ' + LV[lv].n);
+      }
+    }
   });
 
   // Modal event listeners
