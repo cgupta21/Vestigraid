@@ -135,6 +135,80 @@ export const LV = [
       { path: [[6, 2], [6, 3], [6, 4]], speed: 2, tag: '01' },
       { path: [[7, 5], [8, 5], [9, 5]], speed: 2, tag: '02' }
     ]
+  },
+  {
+    n: 'The Laser Grid',
+    timeLimit: 10,
+    time: 10,
+    requiredDoors: ['A', 'B'],
+    hint: 'Pulsing laser barriers guard the security corridor. Loop 1: hold plate a to open Door A. Loop 2: time your run through Laser 1 when dormant to hold plate b, opening Door B. Loop 3: navigate past both laser grids to reach the exit.',
+    map: [
+      '############',
+      '#S...#.....#',
+      '#..a.A...BE#',
+      '#....#..b..#',
+      '############'
+    ],
+    lasers: [
+      { id: 'L1', cells: [[6, 1], [6, 2], [6, 3]], period: 6, activeTicks: [0, 1, 2] },
+      { id: 'L2', cells: [[8, 1], [8, 2]], period: 6, activeTicks: [3, 4, 5] }
+    ]
+  },
+  {
+    n: 'The Rift',
+    timeLimit: 11,
+    time: 11,
+    requiredDoors: ['A', 'B'],
+    hint: 'Teleportation portals bridge isolated containment vaults. Stepping into Portal Alpha (@) instantly transmits you to Portal Beta ($). Loop 1: hold plate a in the west vault to open Door A. Loop 2: warp across the rift to hold plate b. Loop 3: warp across and advance through Door B to the exit.',
+    map: [
+      '############',
+      '#S..#...b..#',
+      '#...@.A.#..#',
+      '#.a.#.$.B.E#',
+      '############'
+    ],
+    portals: [
+      { a: { x: 4, y: 2 }, b: { x: 6, y: 3 }, tagA: 'α', tagB: 'β' }
+    ]
+  },
+  {
+    n: 'The Shift',
+    timeLimit: 12,
+    time: 12,
+    requiredDoors: ['A', 'B'],
+    hint: 'Shifting bulkheads cycle on an 8-tick rhythm. In Phase 0, Barrier 1 is open while Barrier 2 is solid; in Phase 1, the bulkheads invert. Loop 1: hold plate a. Loop 2: cross Barrier 1 in Phase 0 to hold plate b. Loop 3: navigate through the inverted bulkheads to the exit.',
+    map: [
+      '############',
+      '#S...#...b.#',
+      '#..a.A...B.#',
+      '#....#....E#',
+      '############'
+    ],
+    shifts: [
+      { id: 'S1', cells: [[7, 1], [7, 2], [7, 3]], period: 8, activeTicks: [4, 5, 6, 7] },
+      { id: 'S2', cells: [[8, 2], [8, 3]], period: 8, activeTicks: [0, 1, 2, 3] }
+    ]
+  },
+  {
+    n: 'The Paradox',
+    boss: true,
+    timeLimit: 14,
+    time: 14,
+    requiredDoors: ['A', 'B', 'C'],
+    hint: 'The master paradox sector. Coordinate multiple independent shadow recordings across four security chambers. Eliminate both patrolling elite sentinels and keep plates a, b, and c held open to unlock the final exit.',
+    map: [
+      '############',
+      '#S...#..b..#',
+      '#..a.A.....#',
+      '######.B####',
+      '#..........#',
+      '#.c..#..C.E#',
+      '############'
+    ],
+    enemies: [
+      { path: [[7, 2], [8, 2], [9, 2]], speed: 2, tag: '01' },
+      { path: [[7, 5], [8, 5], [9, 5]], speed: 2, tag: '02' }
+    ]
   }
 ];
 
@@ -300,7 +374,125 @@ export function canExitLevel(levelIndex, actPlates, enemies, ghostPlates) {
       return { canExit: true, message: '' };
     }
 
+    case 8: { // Case 09 — The Laser Grid
+      if (!plates.has('a') || !shadows.has('a')) {
+        return {
+          canExit: false,
+          message: 'Door A is locked — open it to unlock the exit!',
+          lockedItem: 'A'
+        };
+      }
+      if (!plates.has('b') || !shadows.has('b')) {
+        return {
+          canExit: false,
+          message: 'Door B is locked — open it to unlock the exit!',
+          lockedItem: 'B'
+        };
+      }
+      return { canExit: true, message: '' };
+    }
+
+    case 9: { // Case 10 — The Rift
+      if (!plates.has('a') || !shadows.has('a')) {
+        return {
+          canExit: false,
+          message: 'Door A is locked — open it to unlock the exit!',
+          lockedItem: 'A'
+        };
+      }
+      if (!plates.has('b') || !shadows.has('b')) {
+        return {
+          canExit: false,
+          message: 'Door B is locked — open it to unlock the exit!',
+          lockedItem: 'B'
+        };
+      }
+      return { canExit: true, message: '' };
+    }
+
+    case 10: { // Case 11 — The Shift
+      if (!plates.has('a') || !shadows.has('a')) {
+        return {
+          canExit: false,
+          message: 'Door A is locked — open it to unlock the exit!',
+          lockedItem: 'A'
+        };
+      }
+      if (!plates.has('b') || !shadows.has('b')) {
+        return {
+          canExit: false,
+          message: 'Door B is locked — open it to unlock the exit!',
+          lockedItem: 'B'
+        };
+      }
+      return { canExit: true, message: '' };
+    }
+
+    case 11: { // Case 12 — The Paradox (Final Boss)
+      const aliveEnemies = enemyList.filter(e => !e.dead);
+      if (aliveEnemies.length > 0) {
+        return {
+          canExit: false,
+          message: 'Kill all enemies to unlock the exit!',
+          lockedItem: 'enemies'
+        };
+      }
+      if (!plates.has('a') || !shadows.has('a')) {
+        return {
+          canExit: false,
+          message: 'Door A is locked — open it to unlock the exit!',
+          lockedItem: 'A'
+        };
+      }
+      if (!plates.has('b') || !shadows.has('b')) {
+        return {
+          canExit: false,
+          message: 'Door B is locked — open it to unlock the exit!',
+          lockedItem: 'B'
+        };
+      }
+      if (!plates.has('c') || !shadows.has('c')) {
+        return {
+          canExit: false,
+          message: 'Door C is locked — open it to unlock the exit!',
+          lockedItem: 'C'
+        };
+      }
+      return { canExit: true, message: '' };
+    }
+
     default:
       return { canExit: true, message: '' };
   }
+}
+
+export function getLevelLasers(levelIndex) {
+  if (levelIndex < 0 || levelIndex >= LV.length) return [];
+  return LV[levelIndex].lasers || [];
+}
+
+export function getLevelPortals(levelIndex) {
+  if (levelIndex < 0 || levelIndex >= LV.length) return [];
+  return LV[levelIndex].portals || [];
+}
+
+export function getLevelShifts(levelIndex) {
+  if (levelIndex < 0 || levelIndex >= LV.length) return [];
+  return LV[levelIndex].shifts || [];
+}
+
+export function isLaserActive(laser, t, actPlates) {
+  if (!laser) return false;
+  if (laser.disablePlate && actPlates && actPlates.has(laser.disablePlate)) {
+    return false;
+  }
+  if (!laser.period || !laser.activeTicks) return true;
+  const phase = t % laser.period;
+  return laser.activeTicks.includes(phase);
+}
+
+export function isShiftSolid(shift, t) {
+  if (!shift || !shift.period || !shift.activeTicks) return false;
+  const phase = t % shift.period;
+  return shift.activeTicks.includes(phase);
 }

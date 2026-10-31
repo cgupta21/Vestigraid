@@ -63,7 +63,7 @@ Experience Vestigraid directly in your web browser with zero setup or installati
 
 - **Zero Installation**: Runs 100% client-side in Google Chrome, Firefox, Safari, Edge, or any modern standards-compliant browser.
 - **Cross-Platform Controls**: Play on desktop using keyboard inputs (`W` `A` `S` `D` / Arrow keys, `Spacebar`, `R`) or on mobile and touch devices using the integrated virtual directional pad and action buttons.
-- **All 8 Cases Live**: Progress seamlessly from Case 01 through Case 08 ("The Last Loop").
+- **All 12 Cases Live**: Progress seamlessly from Case 01 through Case 12 ("The Paradox").
 
 ---
 
@@ -81,7 +81,11 @@ Experience Vestigraid directly in your web browser with zero setup or installati
   - **Case 05 — The Relay** (*8 seconds / 57 ticks*): Triple-chamber security relay. Chained shadows must systematically trigger floor switches `a`, `b`, and `c` to unlock blast gates `A`, `B`, and `C` in sequence.
   - **Case 06 — Crossfire** (*9 seconds / 64 ticks*): Sentry coordination puzzle featuring two intersecting sentry patrol lanes (`01` and `02`) alongside blast door `A`. Requires precise timing and combat strikes to slip past the crossfire.
   - **Case 07 — The Split** (*10 seconds / 71 ticks*): Dual-branch sector requiring simultaneous coordination across upper and lower wings to unlock gates `A`, `B`, and final gate `C`.
-  - **Case 08 — The Last Loop** (*13 seconds / 93 ticks*): Master sector uniting dual pressure plates (`a`, `b`) and two high-speed roaming sentinels (`01`, `02`) who must both be eliminated to unseal the final exit and complete all cases.
+  - **Case 08 — The Last Loop** (*13 seconds / 93 ticks*): Master sector uniting dual pressure plates (`a`, `b`) and two high-speed roaming sentinels (`01`, `02`) who must both be eliminated to unseal the security gate and unlock advanced sectors.
+  - **Case 09 — The Laser Grid** (*10 seconds / 71 ticks*): Introduces pulsing and moving laser barriers with high-voltage active states and dormant intervals. Coordinate shadow door holds and time crossings through safe laser windows.
+  - **Case 10 — The Rift** (*11 seconds / 79 ticks*): Introduces deterministic teleportation portals (`α` and `β`). Warp across isolated containment vaults to depress switches and coordinate loops across the rift.
+  - **Case 11 — The Shift** (*12 seconds / 86 ticks*): Introduces alternating shifting bulkheads cycling on an 8-tick rhythm. Synchronize your run to cross barriers before phase inversion, with automatic displacement safeguards.
+  - **Case 12 — The Paradox** (*14 seconds / 100 ticks*): The ultimate temporal master challenge. Coordinate four concurrent shadow recordings across four security chambers, eliminate elite sentinels, and simultaneously hold plates `a`, `b`, and `c` to conquer the final paradox and close all cases.
 - **Progressive Case Unlocking & Persistence**: Progress saves seamlessly to browser `localStorage` (`vestigraid_progress_v1`). Unlocking is strictly progressive — solve each case to access the next. Any previously unlocked sector can be replayed at will via the Sector Archive (`C` key or header button), without risk of losing progress. Includes a guarded "Reset Progress" option with explicit confirmation.
 - **Dynamic Hi-DPI Rendering**: Automatic canvas scaling using `window.devicePixelRatio` ensures pixel-sharp geometry and text across high-density displays (Retina, 4K) without layout shifts.
 - **Cross-Platform Responsive Design**: Playable with standard desktop keyboard controls or mobile touch screens via an integrated on-screen directional pad and action buttons.
@@ -107,7 +111,7 @@ Experience Vestigraid directly in your web browser with zero setup or installati
 2. **Coordinate with Past Echoes**: Step on pressure plates or position yourself strategically, then press `R` to commit the loop. A shadow is minted that repeats your exact timeline.
 3. **Avoid Collisions**: Colliding with active enemies or walking into an enemy's tile triggers **"Caught"**, erasing the current loop and requiring a retry.
 4. **Time Management**: The progress bar at the bottom reflects your remaining case time. If the timer expires before you reach the exit, the game automatically commits your actions into a shadow and begins the next loop.
-5. **Clear the Case**: Reaching the exit tile (`E`) advances you to the next sector. In combat boss cases (Case 04 & Case 08), the exit remains sealed until all designated hostile entities are neutralized. Clearing Case 08 presents the final **"ALL CASES CLOSED"** victory terminal with full case replay options.
+5. **Clear the Case**: Reaching the exit tile (`E`) advances you to the next sector. In combat boss cases (Case 04, Case 08 & Case 12), the exit remains sealed until all designated hostile entities are neutralized and required security locks are held. Clearing Case 12 presents the final **"ALL CASES CLOSED"** victory terminal with full case replay options.
 
 ---
 
@@ -221,21 +225,26 @@ node tests/suite.js
 
 The suite performs **90 automated assertions** across 10 functional test categories:
 
-1. **Canvas Dimensions**: Verifies correct pixel scaling and aspect ratios across all 8 cases.
+1. **Canvas Dimensions**: Verifies correct pixel scaling and aspect ratios across all 12 cases.
 2. **Boundary Collision & Clamping**: Verifies that pressing directions into exterior bounds or solid walls prevents illegal tile escapes and never triggers false deaths.
 3. **Wall Impassability**: Ensures perimeter walls and interior obstacles remain completely impassable.
 4. **Melee Strike Mechanics**: Confirms directional attacks register in the player's facing direction and enforce cooldown delays.
 5. **Enemy Collision Logic**: Confirms that legitimate enemy collisions (including swap-cross encounters) properly trigger failure resets.
 6. **State Transitions**: Validates loop starts, pause/unpause idempotency (`P`), and full-case resets (`Z`).
 7. **Complete Gameplay Walkthrough**: Automatically simulates puzzle solutions for Cases 01, 02, and 03.
-8. **Boss & Advanced Case Solves**: Simulates multi-loop solutions and verified completions for:
+8. **Advanced Case & Boss Solves**: Simulates multi-loop solutions and verified completions for:
    - **Case 04**: Defeat of both rogue sentinels advancing to Case 05.
    - **Case 05**: 4-loop relay puzzle solution through gates `A`, `B`, and `C`.
    - **Case 06**: 2-loop sentry strike and gate escape.
    - **Case 07**: 4-loop dual-branch coordination and final exit run.
-   - **Case 08**: 3-loop master run eliminating both sentinels, unlocking exit, asserting **"ALL CASES CLOSED"**, and verifying final case restart.
-9. **Timer System & Auto-Commit**: Asserts timer configurations across all 8 cases (6s, 7s, 8s, 10s, 8s, 9s, 10s, 13s), verifies pause freezing, and checks auto-commit behavior upon tick expiration.
+   - **Case 08**: 3-loop run eliminating both sentinels and unsealing gate `B`.
+   - **Case 09**: 3-loop laser grid crossing timing safe windows through dormant beams.
+   - **Case 10**: 3-loop teleportation portal transit linking isolated security chambers.
+   - **Case 11**: 3-loop shifting bulkhead phase synchronization with built-in displacement safety.
+   - **Case 12**: 4-loop master paradox solution coordinating four concurrent shadows, eliminating elite sentinels, unlocking all blast doors, asserting **"ALL CASES CLOSED"**, and verifying final case restart.
+9. **Timer System & Auto-Commit**: Asserts timer configurations across all 12 cases (6s, 7s, 8s, 10s, 8s, 9s, 10s, 13s, 10s, 11s, 12s, 14s), verifies pause freezing, and checks auto-commit behavior upon tick expiration.
 10. **Branding Assets & Responsiveness**: Verifies the presence and integrity of all 14 brand files, validates DOM element loading, checks manifest/meta links, and verifies logo layout without stage overlap on both desktop (1024×768) and mobile (375×667) viewports.
+11. **Expansion Mechanics & Anti-Bypass**: Rigorously tests laser damage, portal warping and loop prevention, shifting bulkhead collisions and player safety displacement, multi-shadow recording playback, and exit validation across all 12 cases.
 
 ---
 

@@ -1,4 +1,4 @@
-import { canExitLevel } from './levels.js';
+import { canExitLevel, isLaserActive, isShiftSolid } from './levels.js';
 import { getGhostPlates } from './shadows.js';
 
 // ─── Canvas rendering, UI updates, and visual theme ──────────────────────────
@@ -65,6 +65,9 @@ export function renderGame({
   enemies,
   getEnemyPosFn,
   getGhostPosFn,
+  lasers,
+  portals,
+  shifts,
   t,
   lv,
   isBoss,
@@ -185,8 +188,136 @@ export function renderGame({
         cx.textAlign = 'center';
         cx.textBaseline = 'middle';
         cx.fillText('EXIT', px + T / 2, py + T / 2);
+
+      } else if (c === '@' || c === '$') {
+        // Portal vortex
+        const isAlpha = c === '@';
+        const portalColor = isAlpha ? '#1565c0' : '#6a1b9a';
+        const ringColor = isAlpha ? '#42a5f5' : '#ab47bc';
+        const glyph = isAlpha ? 'α' : 'β';
+
+        cx.fillStyle = portalColor;
+        cx.beginPath();
+        cx.arc(px + T / 2, py + T / 2, T * 0.38, 0, Math.PI * 2);
+        cx.fill();
+
+        cx.strokeStyle = ringColor;
+        cx.lineWidth = 3;
+        cx.beginPath();
+        cx.arc(px + T / 2, py + T / 2, T * 0.28, 0, Math.PI * 2);
+        cx.stroke();
+
+        cx.fillStyle = C.paper;
+        cx.font = '700 ' + (T * 0.34) + 'px Courier Prime,monospace';
+        cx.textAlign = 'center';
+        cx.textBaseline = 'middle';
+        cx.fillText(glyph, px + T / 2, py + T / 2 + 1);
       }
     }
+  }
+
+  // Shifting Bulkheads
+  if (shifts && shifts.length > 0) {
+    shifts.forEach(shift => {
+      const solid = isShiftSolid(shift, t);
+      const cells = shift.cells || [];
+      cells.forEach(([sx, sy]) => {
+        const spx = sx * T;
+        const spy = sy * T;
+        if (solid) {
+          // Solid industrial barrier
+          cx.fillStyle = '#2b2018';
+          cx.fillRect(spx + 1, spy + 1, T - 2, T - 2);
+          cx.strokeStyle = C.mus;
+          cx.lineWidth = 2;
+          cx.save();
+          cx.beginPath();
+          cx.rect(spx + 1, spy + 1, T - 2, T - 2);
+          cx.clip();
+          cx.beginPath();
+          for (let i = -T; i < T; i += 8) {
+            cx.moveTo(spx + i, spy + T);
+            cx.lineTo(spx + i + T, spy);
+          }
+          cx.stroke();
+          cx.restore();
+          cx.strokeStyle = C.ink;
+          cx.lineWidth = 2;
+          cx.strokeRect(spx + 1, spy + 1, T - 2, T - 2);
+        } else {
+          // Retracted/open platform
+          cx.fillStyle = 'rgba(217, 162, 27, 0.12)';
+          cx.fillRect(spx + 2, spy + 2, T - 4, T - 4);
+          cx.strokeStyle = C.mus;
+          cx.lineWidth = 2;
+          cx.setLineDash([4, 4]);
+          cx.strokeRect(spx + 4, spy + 4, T - 8, T - 8);
+          cx.setLineDash([]);
+          cx.fillStyle = C.mus;
+          cx.fillRect(spx + T / 2 - 2, spy + T / 2 - 2, 4, 4);
+        }
+      });
+    });
+  }
+
+  // Laser Beams
+  if (lasers && lasers.length > 0) {
+    lasers.forEach(laser => {
+      const active = isLaserActive(laser, t, actPlates);
+      const cells = laser.cells || [];
+      if (!cells.length) return;
+
+      if (active) {
+        // Active lethal laser: bright pulsating crimson beam
+        cx.save();
+        cx.fillStyle = 'rgba(226, 83, 31, 0.28)';
+        cells.forEach(([lx, ly]) => {
+          cx.fillRect(lx * T, ly * T, T, T);
+        });
+
+        cells.forEach(([lx, ly]) => {
+          const lcx = lx * T + T / 2;
+          const lcy = ly * T + T / 2;
+          // Outer glow
+          cx.strokeStyle = '#e2531f';
+          cx.lineWidth = Math.max(6, T * 0.18);
+          cx.beginPath();
+          cx.moveTo(lcx, ly * T);
+          cx.lineTo(lcx, ly * T + T);
+          cx.stroke();
+
+          // Core hot line
+          cx.strokeStyle = '#fff';
+          cx.lineWidth = Math.max(2, T * 0.06);
+          cx.beginPath();
+          cx.moveTo(lcx, ly * T);
+          cx.lineTo(lcx, ly * T + T);
+          cx.stroke();
+
+          // Emitter sparks/hazard nodes
+          cx.fillStyle = '#8e1b1b';
+          cx.fillRect(lcx - 4, lcy - 4, 8, 8);
+          cx.fillStyle = '#ffcc80';
+          cx.fillRect(lcx - 2, lcy - 2, 4, 4);
+        });
+        cx.restore();
+      } else {
+        // Inactive dormant guide: faint dotted trajectory
+        cx.save();
+        cx.strokeStyle = 'rgba(226, 83, 31, 0.35)';
+        cx.lineWidth = 2;
+        cx.setLineDash([3, 5]);
+        cells.forEach(([lx, ly]) => {
+          const lcx = lx * T + T / 2;
+          cx.beginPath();
+          cx.moveTo(lcx, ly * T);
+          cx.lineTo(lcx, ly * T + T);
+          cx.stroke();
+        });
+        cx.setLineDash([]);
+        cx.restore();
+      }
+    });
   }
 
   // Start marker (dashed outline)

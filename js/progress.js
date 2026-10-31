@@ -1,7 +1,7 @@
 // ─── Player Progression & LocalStorage Persistence ────────────────────────────
 
 export const STORAGE_KEY = 'vestigraid_progress_v1';
-export const TOTAL_CASES = 8;
+export const TOTAL_CASES = 12;
 
 export function getInitialProgress() {
   return {
@@ -47,7 +47,7 @@ export function loadProgress() {
       highestUnlocked = Math.max(highestUnlocked, minUnlocked);
     }
 
-    const gameCompleted = Boolean(parsed.gameCompleted || completedCases.includes(TOTAL_CASES - 1));
+    const gameCompleted = Boolean(completedCases.includes(TOTAL_CASES - 1));
 
     let lastPlayed = parseInt(parsed.lastPlayed, 10);
     if (isNaN(lastPlayed) || lastPlayed < 0 || lastPlayed >= TOTAL_CASES) {
@@ -97,7 +97,7 @@ export function markCaseCompleted(caseIndex) {
     current.highestUnlocked = Math.max(current.highestUnlocked, caseIndex + 1);
   }
 
-  // Completing Case 08 marks game as fully completed
+  // Completing Case 12 marks game as fully completed
   if (caseIndex === TOTAL_CASES - 1) {
     current.gameCompleted = true;
   }

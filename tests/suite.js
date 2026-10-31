@@ -72,7 +72,7 @@ async function runTests() {
     }
 
     // Grant full unlock for regression tests 1-10
-    await evaluate('progress.highestUnlocked = 7; progress.completedCases = [0,1,2,3,4,5,6,7];');
+    await evaluate('progress.highestUnlocked = 11; progress.completedCases = [0,1,2,3,4,5,6,7,8,9,10,11];');
 
     // Precise key tap that waits for exactly one tick to be consumed
     async function tap(key, code) {
@@ -104,7 +104,11 @@ async function runTests() {
       { lv: 4, w: 768, h: 320, name: 'Case 05' },
       { lv: 5, w: 768, h: 384, name: 'Case 06' },
       { lv: 6, w: 768, h: 448, name: 'Case 07' },
-      { lv: 7, w: 768, h: 448, name: 'Case 08' }
+      { lv: 7, w: 768, h: 448, name: 'Case 08' },
+      { lv: 8, w: 768, h: 320, name: 'Case 09' },
+      { lv: 9, w: 768, h: 320, name: 'Case 10' },
+      { lv: 10, w: 768, h: 320, name: 'Case 11' },
+      { lv: 11, w: 768, h: 448, name: 'Case 12' }
     ];
     for (const d of expectedDims) {
       await evaluate(`loadLevel(${d.lv})`);
@@ -585,23 +589,224 @@ async function runTests() {
     await tap('ArrowRight', 'ArrowRight'); // (10,5) -> Exit E!
 
     await new Promise(r => setTimeout(r, 200));
-    let wonGame8 = await evaluate('won');
-    let ovDisplay8 = await evaluate('document.getElementById("ov").style.display');
-    let ovHtml8 = await evaluate('document.getElementById("ov").innerHTML');
+    let lvAfterC8 = await evaluate('lv');
+    assert(lvAfterC8 === 8, 'Case 08 completed successfully, advanced to Case 09', `lv=${lvAfterC8}`);
 
-    assert(wonGame8 === true, 'Case 08 won condition reached (won = true)');
-    assert(ovDisplay8 === 'flex', 'Victory overlay displayed (display = flex)');
-    assert(ovHtml8.includes('ALL CASES CLOSED'), 'Victory overlay displays "ALL CASES CLOSED"');
+    console.log('\n=== TEST 8F: Case 09 ("The Laser Grid") Full Solve ===');
+    await evaluate('hist = []; loadLevel(8)');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 1: Walk to Plate a (3,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowDown', 'ArrowDown'); // (3,2) -> Plate a
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 2: Wait 3 ticks, move through Door A (5,2) at t=8, L1 dormant at t=9..11, cross to Plate b (8,3)
+    for (let i = 0; i < 3; i++) await tap(' ', 'Space');
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowRight', 'ArrowRight'); // (4,1)
+    await tap('ArrowDown', 'ArrowDown'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (6,2) L1 off
+    await tap('ArrowRight', 'ArrowRight'); // (7,2)
+    await tap('ArrowDown', 'ArrowDown'); // (7,3)
+    await tap('ArrowRight', 'ArrowRight'); // (8,3) -> Plate b
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 3: Navigate down to row 3, east, into Door A (5,2), cross dormant L1 and L2, step through Door B to Exit (10,2)
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowDown', 'ArrowDown'); // (1,3)
+    await tap('ArrowRight', 'ArrowRight'); // (2,3)
+    await tap('ArrowRight', 'ArrowRight'); // (3,3)
+    await tap('ArrowRight', 'ArrowRight'); // (4,3)
+    await tap('ArrowUp', 'ArrowUp'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2) Door A
+    await tap(' ', 'Space'); // wait 1 tick
+    await tap(' ', 'Space'); // wait 1 tick
+    await tap('ArrowRight', 'ArrowRight'); // (6,2) L1 off
+    await tap('ArrowRight', 'ArrowRight'); // (7,2)
+    await tap(' ', 'Space'); // wait 1 tick
+    await tap('ArrowRight', 'ArrowRight'); // (8,2) L2 off
+    await tap('ArrowRight', 'ArrowRight'); // (9,2) Door B
+    await tap('ArrowRight', 'ArrowRight'); // (10,2) -> Exit!
+
+    await new Promise(r => setTimeout(r, 200));
+    let lvAfterC9 = await evaluate('lv');
+    assert(lvAfterC9 === 9, 'Case 09 completed successfully, advanced to Case 10', `lv=${lvAfterC9}`);
+
+    console.log('\n=== TEST 8G: Case 10 ("The Rift") Full Solve ===');
+    await evaluate('hist = []; loadLevel(9)');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 1: Walk to Plate a (2,3)
+    await tap('ArrowDown', 'ArrowDown'); // (1,2)
+    await tap('ArrowDown', 'ArrowDown'); // (1,3)
+    await tap('ArrowRight', 'ArrowRight'); // (2,3) -> Plate a
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 2: Enter Portal Alpha (4,2), warps to Beta (6,3), Door A (6,2) is open, up to (6,1), right to Plate b (8,1)
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowDown', 'ArrowDown'); // (3,2)
+    await tap('ArrowRight', 'ArrowRight'); // (4,2) -> Portal Alpha warp to (6,3)
+    await tap('ArrowUp', 'ArrowUp'); // (6,2) Door A
+    await tap('ArrowUp', 'ArrowUp'); // (6,1)
+    await tap('ArrowRight', 'ArrowRight'); // (7,1)
+    await tap('ArrowRight', 'ArrowRight'); // (8,1) -> Plate b
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 3: Wait 4 ticks, enter Portal Alpha (4,2), warps to Beta (6,3), east through open Door B (8,3) to Exit (10,3)
+    for (let i = 0; i < 4; i++) await tap(' ', 'Space');
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowDown', 'ArrowDown'); // (3,2)
+    await tap('ArrowRight', 'ArrowRight'); // (4,2) -> Portal Alpha warp to (6,3)
+    await tap('ArrowRight', 'ArrowRight'); // (7,3)
+    await tap('ArrowRight', 'ArrowRight'); // (8,3) Door B
+    await tap('ArrowRight', 'ArrowRight'); // (9,3)
+    await tap('ArrowRight', 'ArrowRight'); // (10,3) -> Exit!
+
+    await new Promise(r => setTimeout(r, 200));
+    let lvAfterC10 = await evaluate('lv');
+    assert(lvAfterC10 === 10, 'Case 10 completed successfully, advanced to Case 11', `lv=${lvAfterC10}`);
+
+    console.log('\n=== TEST 8H: Case 11 ("The Shift") Full Solve ===');
+    await evaluate('hist = []; loadLevel(10)');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 1: Walk to Plate a (3,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowDown', 'ArrowDown'); // (3,2) -> Plate a
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 2: Wait 2 ticks, (2,1)->(3,1)->(4,1)->(4,2)->(5,2) Door A, (6,2), cross S1 to (8,1) and Plate b (9,1)
+    await tap(' ', 'Space');
+    await tap(' ', 'Space');
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowRight', 'ArrowRight'); // (4,1)
+    await tap('ArrowDown', 'ArrowDown'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (6,2)
+    await tap('ArrowUp', 'ArrowUp'); // (6,1)
+    await tap('ArrowRight', 'ArrowRight'); // (7,1) S1 open
+    await tap('ArrowRight', 'ArrowRight'); // (8,1)
+    await tap('ArrowRight', 'ArrowRight'); // (9,1) -> Plate b
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 3: Wait 8 ticks for Shadow 2 to clear, through Door A, wait for Phase 1 when S2 opens, cross Door B to Exit (10,3)
+    for (let i = 0; i < 8; i++) await tap(' ', 'Space');
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowRight', 'ArrowRight'); // (4,1)
+    await tap('ArrowDown', 'ArrowDown'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (6,2)
+    await tap(' ', 'Space'); // wait 1 tick -> t=15
+    await tap('ArrowRight', 'ArrowRight'); // (7,2) at t=16 (S1 open)
+    await tap('ArrowRight', 'ArrowRight'); // (7,2) wait
+    await tap(' ', 'Space'); // wait
+    await tap(' ', 'Space'); // wait
+    await tap('ArrowRight', 'ArrowRight'); // (8,2) at t=20 (S2 opens)
+    await tap('ArrowDown', 'ArrowDown'); // (8,3)
+    await tap('ArrowRight', 'ArrowRight'); // (9,3)
+    await tap('ArrowRight', 'ArrowRight'); // (10,3) -> Exit!
+
+    await new Promise(r => setTimeout(r, 200));
+    let lvAfterC11 = await evaluate('lv');
+    assert(lvAfterC11 === 11, 'Case 11 completed successfully, advanced to Case 12', `lv=${lvAfterC11}`);
+
+    console.log('\n=== TEST 8I: Case 12 ("The Paradox") Multi-Shadow Solve & Grand Final Victory ===');
+    await evaluate('hist = []; loadLevel(11)');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 1: Walk to Plate a (3,2)
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowDown', 'ArrowDown'); // (3,2) -> Plate a
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 2: Wait 2, through Door A (5,2), step to (6,2), strike Sentinel 01 at (7,2), reach Plate b (8,1)
+    await tap(' ', 'Space');
+    await tap(' ', 'Space');
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowRight', 'ArrowRight'); // (4,1)
+    await tap('ArrowDown', 'ArrowDown'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (6,2)
+    await tap(' ', 'Space'); // Strike facing right -> eliminates Sentinel 01 at (7,2)
+    await tap('ArrowUp', 'ArrowUp'); // (6,1)
+    await tap('ArrowRight', 'ArrowRight'); // (7,1)
+    await tap('ArrowRight', 'ArrowRight'); // (8,1) -> Plate b
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 3: Advance through Door B (7,3), walk west along corridor 4 to Plate c (2,5)
+    for (let i = 0; i < 5; i++) await tap(' ', 'Space');
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowRight', 'ArrowRight'); // (4,1)
+    await tap('ArrowDown', 'ArrowDown'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (6,2)
+    await tap('ArrowRight', 'ArrowRight'); // (7,2)
+    await tap('ArrowDown', 'ArrowDown'); // (7,3) Door B
+    await tap('ArrowDown', 'ArrowDown'); // (7,4)
+    await tap('ArrowLeft', 'ArrowLeft'); // (6,4)
+    await tap('ArrowLeft', 'ArrowLeft'); // (5,4)
+    await tap('ArrowLeft', 'ArrowLeft'); // (4,4)
+    await tap('ArrowLeft', 'ArrowLeft'); // (3,4)
+    await tap('ArrowLeft', 'ArrowLeft'); // (2,4)
+    await tap('ArrowDown', 'ArrowDown'); // (2,5) -> Plate c
+    await sendKeyRaw('r', 'KeyR');
+    await new Promise(r => setTimeout(r, 100));
+
+    // Loop 4: Advance through Door A (5,2), Door B (7,3), into (7,4), step down to (7,5), step right into Door C (8,5), strike Sentinel 02 at (9,5), step to Exit (10,5)!
+    for (let i = 0; i < 9; i++) await tap(' ', 'Space');
+    await tap('ArrowRight', 'ArrowRight'); // (2,1)
+    await tap('ArrowRight', 'ArrowRight'); // (3,1)
+    await tap('ArrowRight', 'ArrowRight'); // (4,1)
+    await tap('ArrowDown', 'ArrowDown'); // (4,2)
+    await tap('ArrowRight', 'ArrowRight'); // (5,2) Door A
+    await tap('ArrowRight', 'ArrowRight'); // (6,2)
+    await tap('ArrowRight', 'ArrowRight'); // (7,2)
+    await tap('ArrowDown', 'ArrowDown'); // (7,3) Door B
+    await tap('ArrowDown', 'ArrowDown'); // (7,4)
+    await tap('ArrowDown', 'ArrowDown'); // (7,5)
+    await tap('ArrowRight', 'ArrowRight'); // (8,5) Door C (facing right)
+    await tap(' ', 'Space'); // Strike facing right -> eliminates Sentinel 02 at (9,5)
+    await tap('ArrowRight', 'ArrowRight'); // (9,5)
+    await tap('ArrowRight', 'ArrowRight'); // (10,5) -> Exit E!
+
+    await new Promise(r => setTimeout(r, 200));
+    let wonGame12 = await evaluate('won');
+    let ovDisplay12 = await evaluate('document.getElementById("ov").style.display');
+    let ovHtml12 = await evaluate('document.getElementById("ov").innerHTML');
+
+    assert(wonGame12 === true, 'Case 12 won condition reached (won = true)');
+    assert(ovDisplay12 === 'flex', 'Victory overlay displayed (display = flex)');
+    assert(ovHtml12.includes('ALL CASES CLOSED'), 'Victory overlay displays "ALL CASES CLOSED"');
 
     // Test restarting final case button
     await evaluate('document.getElementById("re-last").click()');
     await new Promise(r => setTimeout(r, 100));
     let lvAfterRestart = await evaluate('lv');
     let wonAfterRestart = await evaluate('won');
-    assert(lvAfterRestart === 7 && wonAfterRestart === false, 'Restart final case button resets to Case 08');
+    assert(lvAfterRestart === 11 && wonAfterRestart === false, 'Restart final case button resets to Case 12');
 
     console.log('\n=== TEST 9: Timer Balance, Pausing, State Transitions & Auto-Commit ===');
-    // 1. Verify per-case timer values and tick computations across all 8 cases
+    // 1. Verify per-case timer values and tick computations across all 12 cases
     const expectedTimers = [
       { lv: 0, s: 6, ticks: 43, name: 'Case 01' },
       { lv: 1, s: 7, ticks: 50, name: 'Case 02' },
@@ -610,7 +815,11 @@ async function runTests() {
       { lv: 4, s: 8, ticks: 57, name: 'Case 05' },
       { lv: 5, s: 9, ticks: 64, name: 'Case 06' },
       { lv: 6, s: 10, ticks: 71, name: 'Case 07' },
-      { lv: 7, s: 13, ticks: 93, name: 'Case 08' }
+      { lv: 7, s: 13, ticks: 93, name: 'Case 08' },
+      { lv: 8, s: 10, ticks: 71, name: 'Case 09' },
+      { lv: 9, s: 11, ticks: 79, name: 'Case 10' },
+      { lv: 10, s: 12, ticks: 86, name: 'Case 11' },
+      { lv: 11, s: 14, ticks: 100, name: 'Case 12' }
     ];
     for (const exp of expectedTimers) {
       await evaluate(`loadLevel(${exp.lv})`);
@@ -847,7 +1056,7 @@ async function runTests() {
     assert(modalVisible, 'Case selection modal is visible when opened');
 
     const modalSummary = await evaluate('document.getElementById("progress-summary").textContent');
-    assert(modalSummary.includes('6 of 8 Cases Unlocked'), `Modal displays accurate unlocked summary: "${modalSummary}"`);
+    assert(modalSummary.includes('6 of 12 Cases Unlocked'), `Modal displays accurate unlocked summary: "${modalSummary}"`);
 
     const cardStates = await evaluate(`(() => {
       const cards = document.querySelectorAll('.case-card');
@@ -859,11 +1068,13 @@ async function runTests() {
         badgeText: c.querySelector('.case-badge')?.textContent
       }));
     })()`);
-    assert(cardStates.length === 8, 'Modal renders all 8 case cards');
+    assert(cardStates.length === 12, 'Modal renders all 12 case cards');
     assert(cardStates[0].unlocked && !cardStates[0].disabled && cardStates[0].badgeText.includes('COMPLETED'), 'Case 01 card is unlocked, enabled, and marked COMPLETED');
     assert(cardStates[5].unlocked && !cardStates[5].disabled && cardStates[5].badgeText.includes('UNLOCKED'), 'Case 06 card is unlocked and marked UNLOCKED');
     assert(cardStates[6].locked && cardStates[6].disabled && cardStates[6].badgeText.includes('LOCKED'), 'Case 07 card is locked, disabled, and has LOCKED badge');
     assert(cardStates[7].locked && cardStates[7].disabled && cardStates[7].badgeText.includes('LOCKED'), 'Case 08 card is locked, disabled, and has LOCKED badge');
+    assert(cardStates[8].locked && cardStates[8].disabled && cardStates[8].badgeText.includes('LOCKED'), 'Case 09 card is locked, disabled, and has LOCKED badge');
+    assert(cardStates[11].locked && cardStates[11].disabled && cardStates[11].badgeText.includes('LOCKED'), 'Case 12 card is locked, disabled, and has LOCKED badge');
 
     // Test Continue button loads highest unlocked case
     await evaluate('document.getElementById("btn-continue-case").click()');
@@ -893,28 +1104,84 @@ async function runTests() {
     assert(postResetProg.completedCases.length === 0, 'Confirming reset clears completedCases');
     assert((await evaluate('lv')) === 0, 'Confirming reset loads Case 01');
 
-    // 11. Final Case 08 Completion & Victory Recording
-    for (let c = 0; c < 8; c++) {
+    // 11. Final Case 12 Completion & Victory Recording
+    for (let c = 0; c < 12; c++) {
       await evaluate(`markCaseCompleted(${c})`);
     }
     const finalProg = await evaluate('progress');
-    assert(finalProg.gameCompleted === true, 'Completing Case 08 records gameCompleted = true');
-    assert(finalProg.highestUnlocked === 7, 'highestUnlocked reaches 7 on full game completion');
-    assert(finalProg.completedCases.length === 8, 'All 8 cases recorded in completedCases');
+    assert(finalProg.gameCompleted === true, 'Completing Case 12 records gameCompleted = true');
+    assert(finalProg.highestUnlocked === 11, 'highestUnlocked reaches 11 on full game completion');
+    assert(finalProg.completedCases.length === 12, 'All 12 cases recorded in completedCases');
+
+    console.log('\n=== TEST 11B: New Mechanics Unit & Integration Verification ===');
+    // Laser Grid Verification
+    await evaluate('loadLevel(8, true)');
+    await new Promise(r => setTimeout(r, 40));
+    const lasersDef = await evaluate('getLevelLasers(8)');
+    assert(lasersDef.length === 2, 'Case 09 defines exactly 2 laser beam barriers');
+    assert(await evaluate('isLaserActive(getLevelLasers(8)[0], 0, new Set())') === true, 'Laser 1 is ACTIVE on tick 0');
+    assert(await evaluate('isLaserActive(getLevelLasers(8)[0], 4, new Set())') === false, 'Laser 1 is DORMANT on tick 4');
+    assert(await evaluate('isLaserActive(getLevelLasers(8)[1], 0, new Set())') === false, 'Laser 2 is DORMANT on tick 0');
+    assert(await evaluate('isLaserActive(getLevelLasers(8)[1], 4, new Set())') === true, 'Laser 2 is ACTIVE on tick 4');
+
+    // Stepping into active laser triggers death
+    await evaluate('pos = { x: 6, y: 2 }; tick();');
+    const diedMsg = await evaluate('document.getElementById("msg").textContent');
+    assert(diedMsg.includes('Laser grid vaporized loop') || diedMsg.includes('Caught'), 'Active laser contact legitimately vaporizes loop');
+
+    // Portal Verification
+    await evaluate('loadLevel(9, true)');
+    await new Promise(r => setTimeout(r, 40));
+    const portalsDef = await evaluate('getLevelPortals(9)');
+    assert(portalsDef.length === 1, 'Case 10 defines 1 connected portal pair');
+    // Step onto Portal Alpha (4,2) from (3,2)
+    await evaluate('pos = { x: 3, y: 2 };');
+    await tap('ArrowRight', 'ArrowRight');
+    const posAfterWarp = await evaluate('pos');
+    assert(posAfterWarp.x === 6 && posAfterWarp.y === 3, 'Entering Portal Alpha teleports player to Portal Beta (6,3)');
+    // Staying on Portal Beta does not bounce in a loop
+    await evaluate('tick();');
+    const posStillBeta = await evaluate('pos');
+    assert(posStillBeta.x === 6 && posStillBeta.y === 3, 'Staying on portal does not trigger infinite loop');
+
+    // Shifting Bulkhead Verification
+    await evaluate('loadLevel(10, true)');
+    await new Promise(r => setTimeout(r, 40));
+    const shiftsDef = await evaluate('getLevelShifts(10)');
+    assert(shiftsDef.length === 2, 'Case 11 defines 2 alternating shifting bulkheads');
+    assert(await evaluate('isShiftSolid(getLevelShifts(10)[0], 0)') === false, 'Bulkhead 1 is OPEN during Phase 0 (tick 0)');
+    assert(await evaluate('isShiftSolid(getLevelShifts(10)[0], 5)') === true, 'Bulkhead 1 is SOLID during Phase 1 (tick 5)');
+    assert(await evaluate('isShiftSolid(getLevelShifts(10)[1], 0)') === true, 'Bulkhead 2 is SOLID during Phase 0 (tick 0)');
+    assert(await evaluate('isShiftSolid(getLevelShifts(10)[1], 5)') === false, 'Bulkhead 2 is OPEN during Phase 1 (tick 5)');
+
+    // Multiple Recorded Shadows Verification
+    await evaluate('loadLevel(11, true)');
+    await new Promise(r => setTimeout(r, 40));
+    // Commit 4 distinct recordings
+    await evaluate(`(() => {
+      ghosts.length = 0;
+      ghosts.push([{ x: 3, y: 2, f: [1,0], s: 0 }]); // Shadow 1 on plate a
+      ghosts.push([{ x: 8, y: 1, f: [1,0], s: 0 }]); // Shadow 2 on plate b
+      ghosts.push([{ x: 2, y: 5, f: [1,0], s: 0 }]); // Shadow 3 on plate c
+    })()`);
+    const ghostCount = await evaluate('ghosts.length');
+    assert(ghostCount === 3, 'Supports multiple simultaneous recorded shadows');
+    const activePlatesMulti = await evaluate('Array.from(getGhostPlates(0))');
+    assert(activePlatesMulti.includes('a') && activePlatesMulti.includes('b') && activePlatesMulti.includes('c'), 'All 3 shadows independently depress distinct plates');
 
 
-    console.log('\n=== TEST 12: Exit Validation, Gate Synchronization & Anti-Bypass Across All 8 Cases ===');
+    console.log('\n=== TEST 12: Exit Validation, Gate Synchronization & Anti-Bypass Across All 12 Cases ===');
 
-    // 1. All 8 Cases: Verify Exit is initially LOCKED at start
-    for (let c = 0; c < 8; c++) {
+    // 1. All 12 Cases: Verify Exit is initially LOCKED at start
+    for (let c = 0; c < 12; c++) {
       await evaluate(`loadLevel(${c}, true)`);
       await new Promise(r => setTimeout(r, 40));
       const initExit = await evaluate(`canExitLevel(${c})`);
-      assert(initExit.canExit === false, `Case 0${c+1} exit is LOCKED at start`, `reason="${initExit.message}"`);
-      assert(typeof initExit.message === 'string' && initExit.message.length > 0, `Case 0${c+1} provides descriptive locked message`);
+      assert(initExit.canExit === false, `Case ${String(c+1).padStart(2, '0')} exit is LOCKED at start`, `reason="${initExit.message}"`);
+      assert(typeof initExit.message === 'string' && initExit.message.length > 0, `Case ${String(c+1).padStart(2, '0')} provides descriptive locked message`);
     }
 
-    // 2. Anti-Bypass Verification Across All 8 Cases (Moving onto exit without puzzle solve rejects victory)
+    // 2. Anti-Bypass Verification Across All 12 Cases (Moving onto exit without puzzle solve rejects victory)
     const exitCoords = [
       { lv: 0, x: 8, y: 2, name: 'Case 01', expectedMsg: 'Door A is locked' },
       { lv: 1, x: 10, y: 3, name: 'Case 02', expectedMsg: 'Door A is locked' },
@@ -923,7 +1190,11 @@ async function runTests() {
       { lv: 4, x: 10, y: 1, name: 'Case 05', expectedMsg: 'Door A is locked' },
       { lv: 5, x: 10, y: 1, name: 'Case 06', expectedMsg: 'Door A is locked' },
       { lv: 6, x: 10, y: 3, name: 'Case 07', expectedMsg: 'Door C is locked' },
-      { lv: 7, x: 10, y: 5, name: 'Case 08', expectedMsg: 'Kill all enemies' }
+      { lv: 7, x: 10, y: 5, name: 'Case 08', expectedMsg: 'Kill all enemies' },
+      { lv: 8, x: 10, y: 2, name: 'Case 09', expectedMsg: 'Door A is locked' },
+      { lv: 9, x: 10, y: 3, name: 'Case 10', expectedMsg: 'Door A is locked' },
+      { lv: 10, x: 10, y: 3, name: 'Case 11', expectedMsg: 'Door A is locked' },
+      { lv: 11, x: 10, y: 5, name: 'Case 12', expectedMsg: 'Kill all enemies' }
     ];
 
     for (const ec of exitCoords) {
@@ -978,7 +1249,27 @@ async function runTests() {
     const c8PartialDoor = await evaluate('canExitLevel(7, new Set(), [{tag: "01", dead: true}, {tag: "02", dead: true}], new Set())');
     assert(c8PartialDoor.canExit === false && c8PartialDoor.message.includes('Door B is locked'), 'Case 08 rejects exit when Door B is closed');
 
-    // 4. Complete Requirement Satisfaction: Exit Unlocks (canExit === true) Across All 8 Cases
+    // Case 09: Door A open, Door B closed
+    const c9Partial = await evaluate('canExitLevel(8, new Set(["a"]), [], new Set(["a"]))');
+    assert(c9Partial.canExit === false && c9Partial.message.includes('Door B is locked'), 'Case 09 rejects exit when Door B is closed');
+
+    // Case 10: Door A open, Door B closed
+    const c10Partial = await evaluate('canExitLevel(9, new Set(["a"]), [], new Set(["a"]))');
+    assert(c10Partial.canExit === false && c10Partial.message.includes('Door B is locked'), 'Case 10 rejects exit when Door B is closed');
+
+    // Case 11: Door A open, Door B closed
+    const c11Partial = await evaluate('canExitLevel(10, new Set(["a"]), [], new Set(["a"]))');
+    assert(c11Partial.canExit === false && c11Partial.message.includes('Door B is locked'), 'Case 11 rejects exit when Door B is closed');
+
+    // Case 12: Sentinels dead, but Door C closed
+    const c12Partial1 = await evaluate('canExitLevel(11, new Set(["a", "b"]), [{tag: "01", dead: true}, {tag: "02", dead: true}], new Set(["a", "b"]))');
+    assert(c12Partial1.canExit === false && c12Partial1.message.includes('Door C is locked'), 'Case 12 rejects exit when Door C is closed');
+
+    // Case 12: All doors open, but Sentinel 02 alive
+    const c12Partial2 = await evaluate('canExitLevel(11, new Set(["a", "b", "c"]), [{tag: "01", dead: true}, {tag: "02", dead: false}], new Set(["a", "b", "c"]))');
+    assert(c12Partial2.canExit === false && c12Partial2.message.includes('Kill all enemies'), 'Case 12 rejects exit when Sentinel 02 is alive');
+
+    // 4. Complete Requirement Satisfaction: Exit Unlocks (canExit === true) Across All 12 Cases
     const c1Full = await evaluate('canExitLevel(0, new Set(["a"]), [], new Set(["a"]))');
     assert(c1Full.canExit === true, 'Case 01 exit UNLOCKS when shadow holds plate a');
 
@@ -1003,91 +1294,65 @@ async function runTests() {
     const c8Full = await evaluate('canExitLevel(7, new Set(["b"]), [{tag: "01", dead: true}, {tag: "02", dead: true}], new Set(["b"]))');
     assert(c8Full.canExit === true, 'Case 08 exit UNLOCKS when both sentinels are defeated and Door B is open');
 
-    // 5. Visual State & Gameplay Exit Synchronization Across All 8 Cases
-    for (let c = 0; c < 8; c++) {
+    const c9Full = await evaluate('canExitLevel(8, new Set(["a", "b"]), [], new Set(["a", "b"]))');
+    assert(c9Full.canExit === true, 'Case 09 exit UNLOCKS when shadows hold plates a and b');
+
+    const c10Full = await evaluate('canExitLevel(9, new Set(["a", "b"]), [], new Set(["a", "b"]))');
+    assert(c10Full.canExit === true, 'Case 10 exit UNLOCKS when shadows hold plates a and b');
+
+    const c11Full = await evaluate('canExitLevel(10, new Set(["a", "b"]), [], new Set(["a", "b"]))');
+    assert(c11Full.canExit === true, 'Case 11 exit UNLOCKS when shadows hold plates a and b');
+
+    const c12Full = await evaluate('canExitLevel(11, new Set(["a", "b", "c"]), [{tag: "01", dead: true}, {tag: "02", dead: true}], new Set(["a", "b", "c"]))');
+    assert(c12Full.canExit === true, 'Case 12 exit UNLOCKS when all sentinels are defeated and Doors A, B, and C are open');
+
+    // 5. Visual State & Gameplay Exit Synchronization Across All 12 Cases
+    for (let c = 0; c < 12; c++) {
       await evaluate(`loadLevel(${c}, true)`);
       await new Promise(r => setTimeout(r, 40));
       // At start, canExitLevel is false, so renderer renders locked state (red)
       const renderLockedState = await evaluate('renderCurrentFrame(); isExitVisualLocked()');
-      assert(renderLockedState === true, `Case 0${c+1} renderer visual locked state matches validation (locked = true)`);
+      assert(renderLockedState === true, `Case ${String(c+1).padStart(2, '0')} renderer visual locked state matches validation (locked = true)`);
     }
 
-    // 5B. Comprehensive Live Visual Transition Tests for Every Case
-    // Case 04 Live Progression:
-    await evaluate('loadLevel(3, true)');
+    // 5B. Comprehensive Live Visual Transition Tests
+    // Case 09 Live Progression:
+    await evaluate('loadLevel(8, true)');
     await new Promise(r => setTimeout(r, 40));
-    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 04 visual exit is RED when both enemies are alive');
-    // Defeat only enemy 01
-    await evaluate('enemies[0].dead = true; renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === true, 'Case 04 visual exit remains RED when only enemy 01 is defeated');
-    // Defeat only enemy 02
-    await evaluate('enemies[0].dead = false; enemies[1].dead = true; renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === true, 'Case 04 visual exit remains RED when only enemy 02 is defeated');
-    // Defeat BOTH enemies
-    await evaluate('enemies[0].dead = true; enemies[1].dead = true; renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === false, 'Case 04 visual exit turns GREEN immediately after both enemies are defeated');
-
-    // Case 02 Live Progression:
-    await evaluate('loadLevel(1, true)');
-    await new Promise(r => setTimeout(r, 40));
-    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 02 visual exit is RED at start');
-    // Only Door A open
-    await evaluate('ghosts.push([{x: 2, y: 2, f: [1,0], s: 0}]); renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === true, 'Case 02 visual exit remains RED when only Door A is open');
-    // Both Doors A and B open
-    await evaluate('ghosts.push([{x: 6, y: 1, f: [1,0], s: 0}]); renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === false, 'Case 02 visual exit turns GREEN immediately when both Doors A and B are open');
-
-    // Case 03 Live Progression (Avoidance):
-    await evaluate('loadLevel(2, true)');
-    await new Promise(r => setTimeout(r, 40));
-    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 03 visual exit is RED when Door A is closed');
-    // Shadow holds Door A, sentry alive
+    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 09 visual exit is RED at start');
     await evaluate('ghosts.push([{x: 3, y: 2, f: [1,0], s: 0}]); renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === false, 'Case 03 visual exit turns GREEN with Door A held, even with sentry alive');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 09 visual exit remains RED when only Door A is open');
+    await evaluate('ghosts.push([{x: 8, y: 3, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 09 visual exit turns GREEN immediately when both Doors A and B are open');
 
-    // Case 05 Live Progression:
-    await evaluate('loadLevel(4, true)');
+    // Case 10 Live Progression:
+    await evaluate('loadLevel(9, true)');
     await new Promise(r => setTimeout(r, 40));
-    // 2 of 3 doors open (A and B)
-    await evaluate('ghosts.push([{x: 2, y: 3, f: [1,0], s: 0}], [{x: 5, y: 1, f: [1,0], s: 0}]); renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === true, 'Case 05 visual exit remains RED when only two doors are open');
-    // All 3 doors open
-    await evaluate('ghosts.push([{x: 5, y: 3, f: [1,0], s: 0}]); renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === false, 'Case 05 visual exit turns GREEN immediately when all three doors are open');
-
-    // Case 06 Live Progression (Avoidance):
-    await evaluate('loadLevel(5, true)');
-    await new Promise(r => setTimeout(r, 40));
-    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 06 visual exit is RED when Door A is closed');
-    // Shadow holds Door A, sentries alive
-    await evaluate('ghosts.push([{x: 3, y: 3, f: [1,0], s: 0}]); renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === false, 'Case 06 visual exit turns GREEN with Door A held, even with sentries alive');
-
-    // Case 07 Live Progression:
-    await evaluate('loadLevel(6, true)');
-    await new Promise(r => setTimeout(r, 40));
-    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 07 visual exit is RED at start');
-    // Only branch A open, Gate C closed
+    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 10 visual exit is RED at start');
     await evaluate('ghosts.push([{x: 2, y: 3, f: [1,0], s: 0}]); renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === true, 'Case 07 visual exit remains RED when Gate C is closed');
-    // Gate C open as well
-    await evaluate('ghosts.push([{x: 10, y: 5, f: [1,0], s: 0}]); renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === false, 'Case 07 visual exit turns GREEN immediately when branch and Gate C are held open');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 10 visual exit remains RED when only Door A is open');
+    await evaluate('ghosts.push([{x: 8, y: 1, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 10 visual exit turns GREEN immediately when both Doors A and B are open');
 
-    // Case 08 Live Progression:
-    await evaluate('loadLevel(7, true)');
+    // Case 11 Live Progression:
+    await evaluate('loadLevel(10, true)');
     await new Promise(r => setTimeout(r, 40));
-    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 08 visual exit is RED when enemies alive and Door B closed');
-    // One enemy defeated
+    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 11 visual exit is RED at start');
+    await evaluate('ghosts.push([{x: 3, y: 2, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 11 visual exit remains RED when only Door A is open');
+    await evaluate('ghosts.push([{x: 9, y: 1, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 11 visual exit turns GREEN immediately when both Doors A and B are open');
+
+    // Case 12 Live Progression:
+    await evaluate('loadLevel(11, true)');
+    await new Promise(r => setTimeout(r, 40));
+    assert(await evaluate('renderCurrentFrame(); isExitVisualLocked()') === true, 'Case 12 visual exit is RED at start');
+    await evaluate('ghosts.push([{x: 3, y: 2, f: [1,0], s: 0}], [{x: 8, y: 1, f: [1,0], s: 0}], [{x: 2, y: 5, f: [1,0], s: 0}]); renderCurrentFrame();');
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 12 visual exit remains RED when doors are held but enemies are alive');
     await evaluate('enemies[0].dead = true; renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === true, 'Case 08 visual exit remains RED when only one enemy is defeated');
-    // Both enemies defeated but Door B closed
+    assert(await evaluate('isExitVisualLocked()') === true, 'Case 12 visual exit remains RED when only enemy 01 is dead');
     await evaluate('enemies[1].dead = true; renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === true, 'Case 08 visual exit remains RED when enemies are defeated but Door B is closed');
-    // Both enemies defeated AND Door B open
-    await evaluate('ghosts.push([{x: 10, y: 1, f: [1,0], s: 0}]); renderCurrentFrame();');
-    assert(await evaluate('isExitVisualLocked()') === false, 'Case 08 visual exit turns GREEN immediately when both enemies are dead and Door B is open');
+    assert(await evaluate('isExitVisualLocked()') === false, 'Case 12 visual exit turns GREEN immediately when both enemies are dead and all doors open');
 
     // 6. Legitimate Exit Advances Level
     await evaluate('loadLevel(0, true)');
@@ -1101,31 +1366,7 @@ async function runTests() {
     const lvAfterLegitWin = await evaluate('lv');
     assert(lvAfterLegitWin === 1, 'Legitimate exit completion advances Case 01 to Case 02');
 
-    // Simulate legitimate Case 03 completion with sentry actively alive
-    await evaluate('loadLevel(2, true)');
-    await new Promise(r => setTimeout(r, 40));
-    const c3SentryAlive = await evaluate('enemies[0] && enemies[0].dead === false');
-    assert(c3SentryAlive === true, 'Case 03 sentry 01 is verified alive before exiting');
-    await evaluate(`(() => {
-      ghosts.push([{ x: 3, y: 2, f: [1, 0], s: 0 }]); // ghost on plate a
-      pos = { x: 10, y: 2 }; // player on exit
-      tick();
-    })()`);
-    const lvAfterC3Legit = await evaluate('lv');
-    assert(lvAfterC3Legit === 3, 'Case 03 legitimately completed with sentry alive and advanced to Case 04');
-
-    // Simulate legitimate Case 04 completion after defeating all enemies
-    await evaluate('loadLevel(3, true)');
-    await new Promise(r => setTimeout(r, 40));
-    await evaluate(`(() => {
-      enemies.forEach(e => e.dead = true);
-      pos = { x: 10, y: 5 }; // player on exit
-      tick();
-    })()`);
-    const lvAfterC4Legit = await evaluate('lv');
-    assert(lvAfterC4Legit === 4, 'Case 04 legitimately completed when all enemies killed, advancing to Case 05');
-
-    // Simulate legitimate Case 08 completion after defeating all enemies and holding Door B
+    // Simulate legitimate Case 08 completion advancing to Case 09
     await evaluate('loadLevel(7, true)');
     await new Promise(r => setTimeout(r, 40));
     await evaluate(`(() => {
@@ -1134,8 +1375,22 @@ async function runTests() {
       pos = { x: 10, y: 5 }; // player on exit
       tick();
     })()`);
-    const wonAfterC8Legit = await evaluate('won');
-    assert(wonAfterC8Legit === true, 'Case 08 legitimately completed when all enemies killed and Door B open, triggering game victory');
+    const lvAfterC8Legit = await evaluate('lv');
+    assert(lvAfterC8Legit === 8, 'Legitimate Case 08 completion advances to Case 09');
+
+    // Simulate legitimate Case 12 completion triggering game victory
+    await evaluate('loadLevel(11, true)');
+    await new Promise(r => setTimeout(r, 40));
+    await evaluate(`(() => {
+      enemies.forEach(e => e.dead = true);
+      ghosts.push([{ x: 3, y: 2, f: [1, 0], s: 0 }]); // plate a
+      ghosts.push([{ x: 8, y: 1, f: [1, 0], s: 0 }]); // plate b
+      ghosts.push([{ x: 2, y: 5, f: [1, 0], s: 0 }]); // plate c
+      pos = { x: 10, y: 5 }; // player on exit
+      tick();
+    })()`);
+    const wonAfterC12Legit = await evaluate('won');
+    assert(wonAfterC12Legit === true, 'Case 12 legitimately completed when all enemies killed and all doors open, triggering game victory');
 
     proc.kill();
 

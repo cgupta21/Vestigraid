@@ -29,12 +29,13 @@ export function getGhostPos(g, tt) {
   return g[Math.min(tt, g.length - 1)];
 }
 
+export const MAX_GHOSTS = 6;
+
 export function commitShadowLoop(t) {
   if (t < 2) {
-    return { success: false, reason: 'empty' };
   }
   ghosts.push(rec.slice());
-  if (ghosts.length > 4) ghosts.shift();
+  if (ghosts.length > MAX_GHOSTS) ghosts.shift();
   return { success: true, count: ghosts.length };
 }
 

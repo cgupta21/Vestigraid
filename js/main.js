@@ -1,6 +1,15 @@
 // ─── Main game coordinator and loop ──────────────────────────────────────────
 
-import { LV, parseLevelMap, canExitLevel } from './levels.js';
+import {
+  LV,
+  parseLevelMap,
+  canExitLevel,
+  getLevelLasers,
+  getLevelPortals,
+  getLevelShifts,
+  isLaserActive,
+  isShiftSolid
+} from './levels.js';
 import {
   TICK,
   getTick,
@@ -247,6 +256,7 @@ export function tick() {
   if (won) return;
   incrementTick();
   const currentTick = getTick();
+  const shifts = getLevelShifts(lv);
 
   const { dir, wantStrike } = consumeInput();
   const prevPos = { ...getPlayerPos() };
@@ -254,7 +264,25 @@ export function tick() {
   // Move player
   const currentPlates = getActivePlates(grid, getGhosts(), getPlayerPos(), currentTick);
   if (dir) {
-    movePlayer(dir, grid, cols, rows, currentPlates, getGhosts(), currentTick, getGhostPos);
+    movePlayer(dir, grid, cols, rows, currentPlates, getGhosts(), currentTick, getGhostPos, shifts);
+  }
+
+  // Portal transit (deterministic, loops prevented by checking change of tile)
+  const portals = getLevelPortals(lv);
+  if (portals && portals.length > 0) {
+    const curP = getPlayerPos();
+    for (const portal of portals) {
+      if (curP.x === portal.a.x && curP.y === portal.a.y && (prevPos.x !== portal.a.x || prevPos.y !== portal.a.y)) {
+        setPlayerPos({ x: portal.b.x, y: portal.b.y });
+        say('Rift transit: warped to Portal Beta.');
+        break;
+      }
+      if (curP.x === portal.b.x && curP.y === portal.b.y && (prevPos.x !== portal.b.x || prevPos.y !== portal.b.y)) {
+        setPlayerPos({ x: portal.a.x, y: portal.a.y });
+        say('Rift transit: warped to Portal Alpha.');
+        break;
+      }
+    }
   }
 
   // Player strike
@@ -279,6 +307,51 @@ export function tick() {
 
   // Record frame
   recordShadowFrame(getPlayerPos(), getPlayerFace(), s);
+
+  // Laser collision kills player
+  const lasers = getLevelLasers(lv);
+  if (lasers && lasers.length > 0) {
+    const curP = getPlayerPos();
+    for (const laser of lasers) {
+      if (isLaserActive(laser, currentTick, currentPlates)) {
+        const hit = laser.cells && laser.cells.some(c => c[0] === curP.x && c[1] === curP.y);
+        if (hit) {
+          say('Caught. Laser grid vaporized loop — try again.');
+          die();
+          return;
+        }
+      }
+    }
+  }
+
+  // Shifting bulkhead safety check: safely displace player if trapped inside newly closed bulkhead
+  if (shifts && shifts.length > 0) {
+    const curP = getPlayerPos();
+    for (const shift of shifts) {
+      if (isShiftSolid(shift, currentTick)) {
+        const inside = shift.cells && shift.cells.some(c => c[0] === curP.x && c[1] === curP.y);
+        if (inside) {
+          const cardinalDirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+          let displaced = false;
+          for (const [dx, dy] of cardinalDirs) {
+            const nx = curP.x + dx;
+            const ny = curP.y + dy;
+            if (!isSolid(nx, ny, grid, cols, rows, currentPlates, getGhosts(), currentTick, getGhostPos, shifts)) {
+              setPlayerPos({ x: nx, y: ny });
+              say('Bulkhead shifted — displaced to safety.');
+              displaced = true;
+              break;
+            }
+          }
+          if (!displaced) {
+            say('Caught. Crushed by shifting bulkhead.');
+            die();
+            return;
+          }
+        }
+      }
+    }
+  }
 
   // Enemy contact kills player
   const collidedEnemy = checkEnemyCollision(getPlayerPos(), prevPos, currentTick);
@@ -335,7 +408,7 @@ export function win() {
   progress = markCaseCompleted(lv);
   if (lv === LV.length - 1) {
     won = true;
-    showOverlay('ALL CASES CLOSED', 'You completed all 8 sectors and broke the loop forever.<br>Loops on final case: ' + loops, true);
+    showOverlay('ALL CASES CLOSED', 'You completed all 12 sectors and broke the loop forever.<br>Loops on final case: ' + loops, true);
     return;
   }
   loadLevelNext();
@@ -397,6 +470,9 @@ export function renderCurrentFrame() {
     enemies: getEnemies(),
     getEnemyPosFn: getEnemyPos,
     getGhostPosFn: getGhostPos,
+    lasers: getLevelLasers(lv),
+    portals: getLevelPortals(lv),
+    shifts: getLevelShifts(lv),
     t: getTick(),
     lv,
     isBoss: Boolean(LV[lv].boss),
@@ -530,6 +606,11 @@ function exposeTestCompatibility() {
       ghostPlates !== undefined ? ghostPlates : getGhostPlates(grid, getGhosts(), getTick())
     );
   };
+  window.getLevelLasers = getLevelLasers;
+  window.getLevelPortals = getLevelPortals;
+  window.getLevelShifts = getLevelShifts;
+  window.isLaserActive = isLaserActive;
+  window.isShiftSolid = isShiftSolid;
   window.getGhostPlates = (tt) => getGhostPlates(grid, getGhosts(), tt !== undefined ? tt : getTick());
   window.getGhosts = getGhosts;
   window.getPlayerPos = getPlayerPos;

@@ -69,16 +69,28 @@ export function attemptStrike() {
   };
 }
 
-export function isSolid(x, y, grid, cols, rows, actPlates, ghosts, tt, getGhostPosFn) {
+export function isSolid(x, y, grid, cols, rows, actPlates, ghosts, tt, getGhostPosFn, shifts) {
   if (x < 0 || y < 0 || x >= cols || y >= rows) return true;
   if (!grid[y] || grid[y][x] === undefined) return true;
 
   const c = grid[y][x];
   if (c === '#') return true;
-  // Exit tile is always passable (win condition checked separately in tick)
-  if (c === 'E') return false;
+  // Exit tile and portals are always passable floor tiles
+  if (c === 'E' || c === '@' || c === '$') return false;
   // Uppercase letters (doors A-Z) block unless the matching plate is active
   if (c >= 'A' && c <= 'Z' && !actPlates.has(c.toLowerCase())) return true;
+  // Shifting walls block when currently solid
+  if (shifts && shifts.length > 0) {
+    for (const shift of shifts) {
+      if (shift.cells && shift.cells.some(cell => cell[0] === x && cell[1] === y)) {
+        const period = shift.period || 8;
+        const phase = (tt !== undefined ? tt : 0) % period;
+        if (shift.activeTicks && shift.activeTicks.includes(phase)) {
+          return true;
+        }
+      }
+    }
+  }
   // Ghosts physically block the player
   return ghosts.some(g => {
     const r = getGhostPosFn(g, tt);
@@ -86,14 +98,14 @@ export function isSolid(x, y, grid, cols, rows, actPlates, ghosts, tt, getGhostP
   });
 }
 
-export function movePlayer(dir, grid, cols, rows, actPlates, ghosts, tt, getGhostPosFn) {
+export function movePlayer(dir, grid, cols, rows, actPlates, ghosts, tt, getGhostPosFn, shifts) {
   if (!dir || !DIRS[dir]) return { moved: false, pos };
 
   face = DIRS[dir];
   const nx = pos.x + face[0];
   const ny = pos.y + face[1];
 
-  if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && !isSolid(nx, ny, grid, cols, rows, actPlates, ghosts, tt, getGhostPosFn)) {
+  if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && !isSolid(nx, ny, grid, cols, rows, actPlates, ghosts, tt, getGhostPosFn, shifts)) {
     pos = { x: nx, y: ny };
     pos.x = Math.max(0, Math.min(cols - 1, pos.x));
     pos.y = Math.max(0, Math.min(rows - 1, pos.y));
