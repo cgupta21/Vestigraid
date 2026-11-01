@@ -1,6 +1,7 @@
 // ─── Input handling (keyboard & touch D-pad) ──────────────────────────────────
 
 import { KEY, DIRS } from './player.js';
+import { isCinematicActive, handleCinematicKey } from './cinematics.js';
 
 let q = { dir: null, strike: false };
 let held = [];
@@ -48,6 +49,12 @@ export function initInput({
 }) {
   // Keyboard listener
   window.addEventListener('keydown', e => {
+    // Cinematic input interception: intercept all keys regardless of target during active cinematic
+    if (isCinematicActive()) {
+      handleCinematicKey(e);
+      return;
+    }
+
     if (e.target !== document.body && e.target !== document.documentElement) return;
 
     const k = KEY[e.key];
@@ -87,6 +94,8 @@ export function initInput({
     const k = b.dataset.k;
     b.addEventListener('pointerdown', ev => {
       ev.preventDefault();
+      if (isCinematicActive()) return;
+
       if (k === 'pause') {
         if (isStarted() && !isWon()) onPause();
         return;
@@ -117,4 +126,3 @@ export function initInput({
     b.addEventListener('pointercancel', release);
   });
 }
-

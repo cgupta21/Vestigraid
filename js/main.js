@@ -82,8 +82,25 @@ import {
   getTotalStars,
   getTotalScore,
   getUnlockedAchievements,
-  resetProgress
+  resetProgress,
+  hasViewedStory,
+  markStoryViewed,
+  getUnlockedChapters,
+  unlockChapter
 } from './progress.js';
+import {
+  CHAPTERS,
+  STORY_SEQUENCES,
+  getStorySequence,
+  getChapter,
+  getChapterSequences
+} from './story.js';
+import {
+  initCinematics,
+  playCinematic,
+  isCinematicActive,
+  skipCinematic
+} from './cinematics.js';
 import {
   CASE_TARGETS,
   calculateStarRating,
@@ -183,6 +200,9 @@ export function closeCaseModal() {
   if (!caseModal) return;
   caseModal.style.display = 'none';
   if (resetConfirm) resetConfirm.style.display = 'none';
+  if (document.activeElement && typeof document.activeElement.blur === 'function') {
+    document.activeElement.blur();
+  }
 }
 
 export function toggleCaseModal() {
@@ -195,6 +215,7 @@ export function toggleCaseModal() {
 
 export function renderCaseGrid() {
   if (!caseGrid) return;
+  progress = loadProgress();
   caseGrid.innerHTML = '';
 
   const completedCount = progress.completedCases ? progress.completedCases.length : 0;
@@ -318,9 +339,84 @@ export function renderCaseGrid() {
       achGridEl.appendChild(achCard);
     });
   }
+
+  // Render Story Transmissions Drawer in Modal
+  const storyCountEl = $('story-archive-count');
+  const storyGridEl = $('story-archive-grid');
+  if (storyCountEl && storyGridEl) {
+    const unlockedChapters = getUnlockedChapters(progress);
+    storyCountEl.textContent = `${unlockedChapters.length} / ${CHAPTERS.length} Chapters Unlocked`;
+    storyGridEl.innerHTML = '';
+
+    CHAPTERS.forEach(ch => {
+      const isChapterUnlocked = unlockedChapters.includes(ch.number);
+      if (!isChapterUnlocked) return;
+      const seqs = getChapterSequences(ch.number);
+      seqs.forEach(seq => {
+        const viewed = hasViewedStory(seq.id, progress);
+        const speaker = (seq.lines && seq.lines[0] && seq.lines[0].speaker) ? seq.lines[0].speaker : 'TRANSMISSION';
+
+        const card = document.createElement('div');
+        card.className = `story-entry-card ${viewed ? 'unlocked' : 'locked'}`;
+        card.innerHTML = `
+          <div class="story-entry-info">
+            <span class="story-entry-tag">CHAPTER ${ch.number} · ${speaker.toUpperCase()}</span>
+            <span class="story-entry-title">${seq.title}</span>
+          </div>
+          <button type="button" class="btn-story-replay" data-seq-id="${seq.id}">
+            ${viewed ? '▶ REPLAY' : '▶ PLAY'}
+          </button>
+        `;
+
+        const btn = card.querySelector('.btn-story-replay');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            closeCaseModal();
+            playCinematic(seq.id);
+          });
+        }
+        storyGridEl.appendChild(card);
+      });
+    });
+  }
 }
 
-export function loadLevel(i, force = false) {
+/**
+ * Checks whether an unviewed story sequence should trigger for this case.
+ * @param {number} caseIndex
+ */
+export function checkAndTriggerStoryForLevel(caseIndex) {
+  progress = loadProgress();
+
+  const caseIntroId = 'case' + String(caseIndex + 1).padStart(2, '0') + '_intro';
+
+  /** @type {Record<number, string>} */
+  const chapterIntroMap = {
+    0: 'ch1_intro',
+    3: 'ch2_intro',
+    6: 'ch3_intro',
+    9: 'ch4_intro'
+  };
+
+  const chIntroId = chapterIntroMap[caseIndex];
+
+  if (chIntroId && !hasViewedStory(chIntroId, progress)) {
+    playCinematic(chIntroId, () => {
+      progress = loadProgress();
+      if (!hasViewedStory(caseIntroId, progress)) {
+        playCinematic(caseIntroId, () => {
+          progress = loadProgress();
+        });
+      }
+    });
+  } else if (!hasViewedStory(caseIntroId, progress)) {
+    playCinematic(caseIntroId, () => {
+      progress = loadProgress();
+    });
+  }
+}
+
+export function loadLevel(i, force = false, triggerStory = true) {
   if (i < 0 || i >= LV.length) return false;
   if (!force && !isCaseUnlocked(i, progress)) {
     say('Case locked. Complete previous cases first.');
@@ -355,6 +451,11 @@ export function loadLevel(i, force = false) {
   startRound();
   started = false;
   say('Press a move key to start the loop.');
+
+  if (triggerStory) {
+    checkAndTriggerStoryForLevel(i);
+  }
+
   return true;
 }
 
@@ -541,8 +642,74 @@ export function win() {
     }
   }
 
+  // Chapter Outro triggers upon solving the final case of each chapter
+  // Chapter 1 Outro (Case 03 / index 2)
+  if (completedCase === 2) {
+    unlockChapter(2);
+    progress = loadProgress();
+    if (!hasViewedStory('ch1_outro', progress)) {
+      playCinematic('ch1_outro', () => {
+        progress = loadProgress();
+        loadLevelNext();
+        showCaseCompletionOverlay(completedCase, result, false);
+      });
+      return;
+    }
+  }
+
+  // Chapter 2 Outro (Case 06 / index 5)
+  if (completedCase === 5) {
+    unlockChapter(3);
+    progress = loadProgress();
+    if (!hasViewedStory('ch2_outro', progress)) {
+      playCinematic('ch2_outro', () => {
+        progress = loadProgress();
+        loadLevelNext();
+        showCaseCompletionOverlay(completedCase, result, false);
+      });
+      return;
+    }
+  }
+
+  // Chapter 3 Outro (Case 09 / index 8)
+  if (completedCase === 8) {
+    unlockChapter(4);
+    progress = loadProgress();
+    if (!hasViewedStory('ch3_outro', progress)) {
+      playCinematic('ch3_outro', () => {
+        progress = loadProgress();
+        loadLevelNext();
+        showCaseCompletionOverlay(completedCase, result, false);
+      });
+      return;
+    }
+  }
+
+  // Chapter 4 Outro and Grand Epilogue (Case 12 / index 11)
   if (completedCase === LV.length - 1) {
     won = true;
+    progress = loadProgress();
+    if (!hasViewedStory('ch4_outro', progress)) {
+      playCinematic('ch4_outro', () => {
+        progress = loadProgress();
+        if (!hasViewedStory('epilogue', progress)) {
+          playCinematic('epilogue', () => {
+            progress = loadProgress();
+            showCaseCompletionOverlay(completedCase, result, true);
+          });
+        } else {
+          showCaseCompletionOverlay(completedCase, result, true);
+        }
+      });
+      return;
+    } else if (!hasViewedStory('epilogue', progress)) {
+      playCinematic('epilogue', () => {
+        progress = loadProgress();
+        showCaseCompletionOverlay(completedCase, result, true);
+      });
+      return;
+    }
+
     showCaseCompletionOverlay(completedCase, result, true);
     return;
   }
@@ -579,6 +746,7 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
     ovEl.innerHTML = `
       <img src="brand/icon.svg" alt="Vestigraid" class="ov-icon">
       <h2>ALL CASES CLOSED</h2>
+      <div class="ov-paradox-subtitle">THE ECHO REMAINS &bull; SUBJECT 00 STATUS ACTIVE<br><em>END OF EXPERIMENT — OR THE BEGINNING?</em></div>
       <p>You completed all 12 sectors and broke the loop forever.<br>Loops on final case: ${result.runStats.loops}</p>
       <div class="ov-stars">${starsHtml}</div>
       <div class="ov-score-row">
@@ -741,7 +909,7 @@ export function renderCurrentFrame() {
 }
 
 export function frame(ts) {
-  const isRunning = started && !won && !paused;
+  const isRunning = started && !won && !paused && !isCinematicActive();
   updateTimeAccumulator(ts, isRunning, () => {
     tick();
     return started; // break if die() or commit() stopped loop
@@ -898,10 +1066,25 @@ function exposeTestCompatibility() {
   window.getCaseTotalTicks = () => (won ? caseTotalTicks : caseTotalTicks + getTick());
   window.showAchievementToast = showAchievementToast;
   window.showCaseCompletionOverlay = showCaseCompletionOverlay;
+
+  // Cinematic & Story compatibility
+  window.getTick = getTick;
+  window.playCinematic = playCinematic;
+  window.isCinematicActive = isCinematicActive;
+  window.skipCinematic = skipCinematic;
+  window.hasViewedStory = (id) => hasViewedStory(id, loadProgress());
+  window.markStoryViewed = (id) => { const p = markStoryViewed(id); progress = p; return p; };
+  window.getUnlockedChapters = () => getUnlockedChapters(loadProgress());
+  window.unlockChapter = (ch) => { const p = unlockChapter(ch); progress = p; return p; };
+  window.CHAPTERS = CHAPTERS;
+  window.STORY_SEQUENCES = STORY_SEQUENCES;
+  window.getStorySequence = getStorySequence;
+  window.checkAndTriggerStoryForLevel = checkAndTriggerStoryForLevel;
 }
 
 export function initGame() {
   initRenderer(cv);
+  initCinematics();
   progress = loadProgress();
 
   initInput({
@@ -910,23 +1093,24 @@ export function initGame() {
       if (ovEl && ovEl.style.display !== 'none' && !won) {
         ovEl.style.display = 'none';
       }
-      if (!paused && !isModalOpen()) started = true;
+      if (!paused && !isModalOpen() && !isCinematicActive()) started = true;
     },
     onStrike: () => {
       const ovEl = $('ov');
       if (ovEl && ovEl.style.display !== 'none' && !won) {
         ovEl.style.display = 'none';
       }
-      if (!paused && !isModalOpen()) started = true;
+      if (!paused && !isModalOpen() && !isCinematicActive()) started = true;
     },
-    onCommit: () => { if (!isModalOpen()) commit(false); },
-    onReset: () => { if (!isModalOpen()) loadLevel(lv); },
+    onCommit: () => { if (!isModalOpen() && !isCinematicActive()) commit(false); },
+    onReset: () => { if (!isModalOpen() && !isCinematicActive()) loadLevel(lv); },
     onPause: () => {
-      if (isModalOpen()) return;
+      if (isModalOpen() || isCinematicActive()) return;
       paused = !paused;
       say(paused ? 'Paused. Press P to resume.' : '');
     },
     onCaseSelect: (open) => {
+      if (isCinematicActive()) return;
       if (open === false) closeCaseModal();
       else toggleCaseModal();
     },
@@ -939,6 +1123,7 @@ export function initGame() {
   window.addEventListener('keydown', (e) => {
     const ovEl = $('ov');
     if (ovEl && ovEl.style.display !== 'none' && !won) {
+      if (isCinematicActive()) return;
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
         ovEl.style.display = 'none';
         say('Case ' + String(lv + 1).padStart(2, '0') + ' — ' + LV[lv].n);

@@ -72,7 +72,7 @@ async function runTests() {
     }
 
     // Grant full unlock for regression tests 1-10
-    await evaluate('progress.highestUnlocked = 11; progress.completedCases = [0,1,2,3,4,5,6,7,8,9,10,11];');
+    await evaluate('progress.highestUnlocked = 11; progress.completedCases = [0,1,2,3,4,5,6,7,8,9,10,11]; progress.story = { viewed: Object.keys(STORY_SEQUENCES), unlockedChapters: [1,2,3,4] }; saveProgress(progress); if (typeof skipCinematic === "function" && isCinematicActive()) skipCinematic();');
 
     // Precise key tap that waits for exactly one tick to be consumed
     async function tap(key, code) {
@@ -1049,6 +1049,7 @@ async function runTests() {
 
     // Restore valid state
     await evaluate(`saveProgress(${JSON.stringify(progAfterReplay)})`);
+    await evaluate('if (isCinematicActive()) skipCinematic();');
 
     // 9. Case Selection UI Modal Rendering & Interaction
     await evaluate('openCaseModal()');
@@ -1080,6 +1081,7 @@ async function runTests() {
     await evaluate('document.getElementById("btn-continue-case").click()');
     assert((await evaluate('lv')) === 5, 'Continue button in modal loads highest unlocked case (Case 06)');
     assert(!(await evaluate('document.getElementById("case-modal").style.display !== "none"')), 'Modal closes after clicking Continue');
+    await evaluate('if (isCinematicActive()) skipCinematic();');
 
     // Test C key shortcut toggles modal
     await sendKeyRaw('c', 'KeyC');
@@ -1112,6 +1114,7 @@ async function runTests() {
     assert(finalProg.gameCompleted === true, 'Completing Case 12 records gameCompleted = true');
     assert(finalProg.highestUnlocked === 11, 'highestUnlocked reaches 11 on full game completion');
     assert(finalProg.completedCases.length === 12, 'All 12 cases recorded in completedCases');
+    await evaluate('progress.story = { viewed: Object.keys(STORY_SEQUENCES), unlockedChapters: [1,2,3,4] }; saveProgress(progress); if (isCinematicActive()) skipCinematic();');
 
     console.log('\n=== TEST 11B: New Mechanics Unit & Integration Verification ===');
     // Laser Grid Verification
@@ -1623,6 +1626,7 @@ async function runTests() {
     assert(toastCount > 0, 'Achievement toast rendered in DOM');
 
     // Completion overlay on normal case (Case 01)
+    await evaluate('progress.story = { viewed: Object.keys(STORY_SEQUENCES), unlockedChapters: [1,2,3,4] }; saveProgress(progress); if (isCinematicActive()) skipCinematic();');
     await evaluate('loadLevel(0, true)');
     await new Promise(r => setTimeout(r, 40));
     await evaluate(`(() => {
@@ -1672,6 +1676,8 @@ async function runTests() {
     assert(migratedProg.stars[0] >= 1, 'Legacy completed case 0 safely assigned default star rating');
     assert(migratedProg.scores[0] >= 400, 'Legacy completed case 0 safely assigned default base score');
     assert(Array.isArray(migratedProg.achievements), 'Legacy progress safely initializes achievements array');
+    assert(migratedProg.story && Array.isArray(migratedProg.story.viewed), 'Legacy progress safely initializes story viewed array');
+    assert(migratedProg.story && Array.isArray(migratedProg.story.unlockedChapters) && migratedProg.story.unlockedChapters.includes(1), 'Legacy progress safely unlocks Chapter 1');
 
     // Dynamic total calculations
     assert(await evaluate('getTotalStars(progress)') >= 4, 'getTotalStars calculates sum of earned stars');
@@ -1682,6 +1688,154 @@ async function runTests() {
     assert((await evaluate('getTotalStars(progress)')) === 0, 'Reset progress clears all stars to 0');
     assert((await evaluate('getTotalScore(progress)')) === 0, 'Reset progress clears total score to 0');
     assert((await evaluate('getUnlockedAchievements(progress).length')) === 0, 'Reset progress clears all achievements');
+
+    console.log('\n=== TEST 17: Cinematic Story Engine & Chapter 1 Verification ===');
+    // 1. Fresh state has empty story viewed and Chapter 1 unlocked
+    await evaluate('progress = resetProgress()');
+    assert(await evaluate('getUnlockedChapters().includes(1)'), 'Chapter 1 is unlocked by default');
+    assert(await evaluate('!hasViewedStory("ch1_intro")'), 'Fresh progress has not viewed ch1_intro');
+    assert(await evaluate('!hasViewedStory("case01_intro")'), 'Fresh progress has not viewed case01_intro');
+
+    // 2. Loading Case 01 for a fresh player triggers ch1_intro cinematic
+    await evaluate('loadLevel(0)');
+    assert(await evaluate('isCinematicActive()'), 'Loading Case 01 triggers cinematic overlay for unviewed story');
+    assert((await evaluate('t')) === 0, 'Cinematic consumes zero gameplay ticks (tick = 0)');
+    assert((await evaluate('started')) === false, 'Game started remains false while cinematic is active');
+
+    // 3. Gameplay input suppression while cinematic is active
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowDown', code: 'ArrowDown' });
+    await new Promise(r => setTimeout(r, 40));
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowDown', code: 'ArrowDown' });
+    await new Promise(r => setTimeout(r, 50));
+    assert((await evaluate('started')) === false, 'Arrow key during cinematic does not start gameplay');
+    assert((await evaluate('t')) === 0, 'Ticks remain 0 despite attempted movement during cinematic');
+
+    // 4. Typewriter completion and line advance via Space/Enter
+    const textBeforeSpace = await evaluate('document.getElementById("cinematic-text")?.textContent || ""');
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space' });
+    await new Promise(r => setTimeout(r, 20));
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space' });
+    await new Promise(r => setTimeout(r, 50));
+    const textAfterSpace = await evaluate('document.getElementById("cinematic-text")?.textContent || ""');
+    assert(textAfterSpace.length >= textBeforeSpace.length, 'Space key completes or advances typewriter text');
+
+    // 5. Skipping sequence via Escape or skip button
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape' });
+    await new Promise(r => setTimeout(r, 20));
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape' });
+    await new Promise(r => setTimeout(r, 100));
+    assert(await evaluate('hasViewedStory("ch1_intro")'), 'Skipping ch1_intro marks it as viewed');
+
+    // 6. Direct invocation of case01_intro, case02_intro, case03_intro
+    await evaluate('playCinematic("case01_intro")');
+    assert(await evaluate('isCinematicActive()'), 'playCinematic("case01_intro") opens cinematic');
+    await evaluate('skipCinematic()');
+    assert(await evaluate('hasViewedStory("case01_intro")'), 'case01_intro marked as viewed after skip');
+    assert(!(await evaluate('isCinematicActive()')), 'Overlay closed after skip');
+
+    await evaluate('playCinematic("case02_intro")');
+    assert(await evaluate('isCinematicActive()'), 'case02_intro opens cinematic');
+    await evaluate('skipCinematic()');
+    assert(await evaluate('hasViewedStory("case02_intro")'), 'case02_intro marked as viewed');
+
+    await evaluate('playCinematic("case03_intro")');
+    assert(await evaluate('isCinematicActive()'), 'case03_intro opens cinematic');
+    await evaluate('skipCinematic()');
+    assert(await evaluate('hasViewedStory("case03_intro")'), 'case03_intro marked as viewed');
+
+    // 7. Solving Case 03 unlocks Chapter 2 and triggers ch1_outro
+    await evaluate('loadLevel(2, true, false)');
+    await evaluate('unlockChapter(2)');
+    assert(await evaluate('getUnlockedChapters().includes(2)'), 'Chapter 2 unlocked in story progress');
+
+    await evaluate('playCinematic("ch1_outro")');
+    assert(await evaluate('isCinematicActive()'), 'ch1_outro plays properly');
+    await evaluate('skipCinematic()');
+    assert(await evaluate('hasViewedStory("ch1_outro")'), 'ch1_outro marked as viewed');
+
+    // 8. Sector Archive modal story transmissions section
+    await evaluate('openCaseModal()');
+    const storySectionEl = await evaluate('Boolean(document.getElementById("story-archive-section"))');
+    assert(storySectionEl, 'Sector Archive contains story-archive-section');
+    const storyCardsCount = await evaluate('document.querySelectorAll(".story-entry-card").length');
+    assert(storyCardsCount >= 5, 'Sector Archive renders all Chapter 1 transmission cards');
+    const replayBtnText = await evaluate('document.querySelector(".btn-story-replay")?.textContent || ""');
+    assert(replayBtnText.includes('REPLAY') || replayBtnText.includes('PLAY'), 'Transmission cards have interactive replay buttons');
+
+    // 9. Replaying transmission from modal
+    await evaluate('document.querySelector(".btn-story-replay")?.click()');
+    await new Promise(r => setTimeout(r, 50));
+    assert(await evaluate('isCinematicActive()'), 'Clicking transmission Replay button opens cinematic overlay');
+    await evaluate('skipCinematic()');
+    assert(!(await evaluate('isCinematicActive()')), 'Cinematic overlay cleanly closed');
+    await evaluate('closeCaseModal()');
+
+    console.log('\n=== TEST 18: Full Narrative Integration (Chapters 2–4 & Grand Epilogue) ===');
+    // 1. Verify all 21 story sequences exist in registry
+    const seqCount = await evaluate('Object.keys(STORY_SEQUENCES).length');
+    assert(seqCount === 21, `All 21 story sequences registered (found ${seqCount})`);
+
+    // 2. Chapter 2 transitions
+    await evaluate('playCinematic("ch2_intro")');
+    assert(await evaluate('isCinematicActive()'), 'ch2_intro plays properly');
+    await evaluate('skipCinematic()');
+    assert(await evaluate('hasViewedStory("ch2_intro")'), 'ch2_intro marked as viewed');
+
+    for (const id of ['case04_intro', 'case05_intro', 'case06_intro', 'ch2_outro']) {
+      await evaluate(`playCinematic("${id}")`);
+      assert(await evaluate('isCinematicActive()'), `${id} plays properly`);
+      await evaluate('skipCinematic()');
+      assert(await evaluate(`hasViewedStory("${id}")`), `${id} marked as viewed`);
+    }
+
+    // 3. Chapter 3 transitions
+    for (const id of ['ch3_intro', 'case07_intro', 'case08_intro', 'case09_intro', 'ch3_outro']) {
+      await evaluate(`playCinematic("${id}")`);
+      assert(await evaluate('isCinematicActive()'), `${id} plays properly`);
+      await evaluate('skipCinematic()');
+      assert(await evaluate(`hasViewedStory("${id}")`), `${id} marked as viewed`);
+    }
+
+    // 4. Chapter 4 transitions
+    for (const id of ['ch4_intro', 'case10_intro', 'case11_intro', 'case12_intro']) {
+      await evaluate(`playCinematic("${id}")`);
+      assert(await evaluate('isCinematicActive()'), `${id} plays properly`);
+      await evaluate('skipCinematic()');
+      assert(await evaluate(`hasViewedStory("${id}")`), `${id} marked as viewed`);
+    }
+
+    // 5. Case 12 victory sequencing: triggers ch4_outro, then epilogue, then Grand Final overlay
+    await evaluate('loadLevel(11, true, false)');
+    await evaluate('progress.story.viewed = progress.story.viewed.filter(id => id !== "ch4_outro" && id !== "epilogue"); saveProgress(progress);');
+    // Trigger win on Case 12
+    await evaluate(`(() => {
+      win();
+    })()`);
+    assert(await evaluate('isCinematicActive()'), 'Case 12 win triggers Chapter 4 Outro cinematic');
+    const c4OutroTitle = await evaluate('document.getElementById("cinematic-title")?.textContent');
+    assert(c4OutroTitle === 'The Warden Falls', `First scene is "The Warden Falls" (got "${c4OutroTitle}")`);
+
+    // Complete ch4_outro -> epilogue should chain
+    await evaluate('skipCinematic()');
+    assert(await evaluate('isCinematicActive()'), 'Grand Epilogue chains immediately after ch4_outro');
+    const epiTitle = await evaluate('document.getElementById("cinematic-title")?.textContent');
+    assert(epiTitle === 'The Echo Protocol', `Second scene is Grand Epilogue "The Echo Protocol" (got "${epiTitle}")`);
+
+    // Complete epilogue -> Grand Final overlay should appear
+    await evaluate('skipCinematic()');
+    assert(!(await evaluate('isCinematicActive()')), 'Overlay closed after epilogue concludes');
+    const grandOverlayVisible = await evaluate('document.getElementById("ov")?.style.display !== "none"');
+    assert(grandOverlayVisible, 'Grand Final completion overlay displayed after epilogue');
+    const grandHeading = await evaluate('document.querySelector("#ov h2")?.textContent || ""');
+    assert(grandHeading.includes('ALL CASES CLOSED'), 'Grand Final overlay displays ALL CASES CLOSED');
+
+    // 6. Full Archive rendering: all 4 chapters unlocked
+    await evaluate('document.getElementById("ov").style.display = "none"');
+    await evaluate('progress.story.unlockedChapters = [1, 2, 3, 4]; saveProgress(progress);');
+    await evaluate('openCaseModal()');
+    const allTransmissionCards = await evaluate('document.querySelectorAll(".story-entry-card").length');
+    assert(allTransmissionCards === 21, `Sector Archive displays all 21 transmission replay cards across all 4 chapters (found ${allTransmissionCards})`);
+    await evaluate('closeCaseModal()');
 
     proc.kill();
 

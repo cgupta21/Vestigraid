@@ -14,6 +14,12 @@ export const TOTAL_CASES = 12;
  */
 
 /**
+ * @typedef {Object} StoryProgress
+ * @property {string[]} viewed
+ * @property {number[]} unlockedChapters
+ */
+
+/**
  * @typedef {Object} PlayerProgress
  * @property {number} highestUnlocked
  * @property {number[]} completedCases
@@ -23,6 +29,7 @@ export const TOTAL_CASES = 12;
  * @property {Record<string|number, number>} stars
  * @property {Record<string|number, CaseStat>} caseStats
  * @property {string[]} achievements
+ * @property {StoryProgress} story
  * @property {number} updatedAt
  */
 
@@ -58,6 +65,10 @@ export function getInitialProgress() {
     stars: /** @type {Record<string|number, number>} */ ({}),            // { "0": 3, ... } best star rating per case (0..3)
     caseStats: /** @type {Record<string|number, CaseStat>} */ ({}),        // { "0": { loops: 2, totalTicks: 22, deaths: 0 } }
     achievements: /** @type {string[]} */ ([]),     // array of unlocked achievement IDs
+    story: {
+      viewed: /** @type {string[]} */ ([]),
+      unlockedChapters: /** @type {number[]} */ ([1])
+    },
     updatedAt: Date.now()
   };
 }
@@ -151,6 +162,27 @@ export function loadProgress() {
       achievements = [...new Set(parsed.achievements.filter((/** @type {any} */ x) => typeof x === 'string'))];
     }
 
+    // Story progress validation & backward-compatible migration
+    const rawStory = (parsed.story && typeof parsed.story === 'object') ? parsed.story : {};
+    /** @type {string[]} */
+    const viewed = Array.isArray(rawStory.viewed)
+      ? [...new Set(rawStory.viewed.filter((/** @type {any} */ x) => typeof x === 'string'))]
+      : [];
+    /** @type {number[]} */
+    let unlockedChapters = Array.isArray(rawStory.unlockedChapters)
+      ? rawStory.unlockedChapters.map((/** @type {any} */ x) => parseInt(String(x), 10)).filter((/** @type {number} */ x) => !isNaN(x) && x >= 1 && x <= 4)
+      : [];
+    if (!unlockedChapters.includes(1)) unlockedChapters.push(1);
+    if (highestUnlocked >= 3 && !unlockedChapters.includes(2)) unlockedChapters.push(2);
+    if (highestUnlocked >= 6 && !unlockedChapters.includes(3)) unlockedChapters.push(3);
+    if (highestUnlocked >= 9 && !unlockedChapters.includes(4)) unlockedChapters.push(4);
+    unlockedChapters = [...new Set(unlockedChapters)].sort((a, b) => a - b);
+
+    const story = {
+      viewed,
+      unlockedChapters
+    };
+
     return {
       highestUnlocked,
       completedCases,
@@ -160,6 +192,7 @@ export function loadProgress() {
       stars,
       caseStats,
       achievements,
+      story,
       updatedAt: parsed.updatedAt || Date.now()
     };
   } catch (err) {
@@ -190,6 +223,19 @@ export function saveProgress(data) {
       achievements: Array.isArray(raw.achievements)
         ? [...new Set(raw.achievements.filter((/** @type {any} */ x) => typeof x === 'string'))]
         : [],
+      story: (() => {
+        const rawStory = (raw.story && typeof raw.story === 'object') ? raw.story : {};
+        /** @type {string[]} */
+        const viewed = Array.isArray(rawStory.viewed)
+          ? [...new Set(rawStory.viewed.filter((/** @type {any} */ x) => typeof x === 'string'))]
+          : [];
+        /** @type {number[]} */
+        let unlocked = Array.isArray(rawStory.unlockedChapters)
+          ? [...new Set(rawStory.unlockedChapters.map((/** @type {any} */ x) => parseInt(String(x), 10)).filter((/** @type {number} */ x) => !isNaN(x) && x >= 1 && x <= 4))].sort((a, b) => a - b)
+          : [1];
+        if (!unlocked.includes(1)) unlocked.unshift(1);
+        return { viewed, unlockedChapters: unlocked };
+      })(),
       updatedAt: Date.now()
     };
     const storage = getLocalStorage();
@@ -402,6 +448,71 @@ export function getTotalScore(progressData) {
 export function getUnlockedAchievements(progressData) {
   const prog = progressData || loadProgress();
   return (prog && Array.isArray(prog.achievements)) ? prog.achievements : [];
+}
+
+/**
+ * Checks if a specific story sequence has already been viewed.
+ * @param {string} storyId
+ * @param {PlayerProgress} [progressData]
+ * @returns {boolean}
+ */
+export function hasViewedStory(storyId, progressData) {
+  const prog = progressData || loadProgress();
+  return Boolean(prog && prog.story && Array.isArray(prog.story.viewed) && prog.story.viewed.includes(storyId));
+}
+
+/**
+ * Records a story sequence as viewed in persistent storage.
+ * @param {string} storyId
+ * @returns {PlayerProgress}
+ */
+export function markStoryViewed(storyId) {
+  const current = loadProgress();
+  if (!current.story) {
+    current.story = { viewed: [], unlockedChapters: [1] };
+  }
+  if (!Array.isArray(current.story.viewed)) {
+    current.story.viewed = [];
+  }
+  if (!current.story.viewed.includes(storyId)) {
+    current.story.viewed.push(storyId);
+    saveProgress(current);
+  }
+  return current;
+}
+
+/**
+ * Returns the list of unlocked chapter numbers (1..4).
+ * @param {PlayerProgress} [progressData]
+ * @returns {number[]}
+ */
+export function getUnlockedChapters(progressData) {
+  const prog = progressData || loadProgress();
+  if (prog && prog.story && Array.isArray(prog.story.unlockedChapters)) {
+    return prog.story.unlockedChapters;
+  }
+  return [1];
+}
+
+/**
+ * Unlocks a chapter for the story transmission archive.
+ * @param {number} chapterNum - 1..4
+ * @returns {PlayerProgress}
+ */
+export function unlockChapter(chapterNum) {
+  const current = loadProgress();
+  if (!current.story) {
+    current.story = { viewed: [], unlockedChapters: [1] };
+  }
+  if (!Array.isArray(current.story.unlockedChapters)) {
+    current.story.unlockedChapters = [1];
+  }
+  if (!current.story.unlockedChapters.includes(chapterNum) && chapterNum >= 1 && chapterNum <= 4) {
+    current.story.unlockedChapters.push(chapterNum);
+    current.story.unlockedChapters.sort((a, b) => a - b);
+    saveProgress(current);
+  }
+  return current;
 }
 
 /**

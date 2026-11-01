@@ -750,6 +750,17 @@ kbd {
   text-align: center;
 }
 
+.ov-paradox-subtitle {
+  font-family: Anton, Impact, sans-serif;
+  letter-spacing: .08em;
+  font-size: 13px;
+  color: var(--blood);
+  text-align: center;
+  line-height: 1.4;
+  margin: 2px 0 6px;
+  text-transform: uppercase;
+}
+
 .ov-stars {
   display: flex;
   gap: 8px;
@@ -933,4 +944,305 @@ kbd {
 .toast-desc {
   font-size: 10px;
   color: #4a3b32;
+}
+
+/* ─── Cinematic Story Presentation (The Echo Protocol) ──────────────────────── */
+.cinematic-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(6, 5, 7, 0.95);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: cinematicFadeIn .25s ease-out;
+  cursor: pointer;
+  user-select: none;
+}
+
+@keyframes cinematicFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cinematic-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.8) 100%),
+              repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 3px);
+}
+
+.cinematic-frame {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 640px;
+  background: #0f0d10;
+  border: 2px solid #2e262a;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 0 1px #1a1618, 0 0 15px rgba(230, 57, 70, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Red warning corner brackets */
+.cinematic-frame::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-top: 3px solid var(--blood);
+  border-left: 3px solid var(--blood);
+  pointer-events: none;
+}
+
+.cinematic-frame::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-bottom: 3px solid var(--blood);
+  border-right: 3px solid var(--blood);
+  pointer-events: none;
+}
+
+.cinematic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #171318;
+  border-bottom: 1px solid #2a2024;
+}
+
+.cinematic-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: .08em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cinematic-tag {
+  color: var(--blood);
+}
+
+.cinematic-sep {
+  color: #4a3e44;
+}
+
+.cinematic-title {
+  color: #c9b8b0;
+  font-family: Anton, Impact, sans-serif;
+  letter-spacing: .05em;
+  font-size: 13px;
+}
+
+.cinematic-skip-btn {
+  background: transparent;
+  color: #8c7e84;
+  border: 1px solid #3c3238;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s ease;
+  font-family: 'Courier Prime', monospace;
+}
+
+.cinematic-skip-btn:hover {
+  background: var(--blood);
+  color: #fff;
+  border-color: var(--blood);
+  box-shadow: 0 0 8px rgba(230, 57, 70, 0.4);
+}
+
+.cinematic-body {
+  padding: 24px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 140px;
+}
+
+.cinematic-speaker-row {
+  display: flex;
+  align-items: center;
+}
+
+.cinematic-speaker {
+  font-family: 'Courier Prime', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 2px;
+  border: 1px solid;
+}
+
+/* Speaker aesthetic styles */
+.cinematic-speaker.system {
+  color: #a8b2d1;
+  background: rgba(168, 178, 209, 0.08);
+  border-color: #3b4258;
+}
+
+.cinematic-speaker.voice {
+  color: #48cae4;
+  background: rgba(72, 202, 228, 0.08);
+  border-color: #1e6091;
+  text-shadow: 0 0 8px rgba(72, 202, 228, 0.3);
+}
+
+.cinematic-speaker.warden {
+  color: #ff4757;
+  background: rgba(255, 71, 87, 0.1);
+  border-color: #b71540;
+  text-shadow: 0 0 8px rgba(255, 71, 87, 0.4);
+}
+
+.cinematic-speaker.venn {
+  color: #f4a261;
+  background: rgba(244, 162, 97, 0.08);
+  border-color: #e76f51;
+}
+
+.cinematic-text-box {
+  flex: 1;
+}
+
+.cinematic-text {
+  font-family: 'Courier Prime', monospace;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #f1eee9;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  min-height: 52px;
+}
+
+.cinematic-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 16px;
+  background: #141014;
+  border-top: 1px solid #201a1e;
+}
+
+.cinematic-prompt {
+  font-size: 10px;
+  letter-spacing: .1em;
+  font-weight: 700;
+  color: #8c7e84;
+  text-transform: uppercase;
+  animation: promptBlink 1.4s infinite ease-in-out;
+  transition: opacity .2s ease;
+}
+
+@keyframes promptBlink {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.3; }
+}
+
+/* ─── Story Transmissions in Sector Archive ─────────────────────────────────── */
+.story-archive-section {
+  margin-top: 12px;
+  border-top: 2px dashed var(--ink);
+  padding-top: 10px;
+}
+
+.story-archive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.story-archive-header h3 {
+  font-family: Anton, Impact, sans-serif;
+  font-size: 16px;
+  margin: 0;
+  color: var(--ink);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.story-archive-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--blood);
+  text-transform: uppercase;
+}
+
+.story-archive-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.story-entry-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card-bg, #ebe1d1);
+  border: 2px solid var(--ink);
+  padding: 6px 10px;
+  gap: 10px;
+}
+
+.story-entry-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.story-entry-tag {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--blood);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.story-entry-title {
+  font-family: Anton, Impact, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.btn-story-replay {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s ease;
+}
+
+.btn-story-replay:hover {
+  background: var(--blood);
+  color: #fff;
 }

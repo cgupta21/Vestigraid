@@ -27,6 +27,30 @@
 <div class="sub">Every move leaves a mark. Every mark fights back.</div>
 </header>
 <div id="toast-container" class="toast-container" aria-live="polite"></div>
+<div id="cinematic-overlay" class="cinematic-overlay" style="display: none;" role="dialog" aria-modal="true" aria-label="Transmission Cinematic">
+  <div class="cinematic-backdrop"></div>
+  <div class="cinematic-frame">
+    <div class="cinematic-header">
+      <div class="cinematic-meta">
+        <span class="cinematic-tag" id="cinematic-chapter">CHAPTER 1</span>
+        <span class="cinematic-sep">/</span>
+        <span class="cinematic-title" id="cinematic-title">TRANSMISSION</span>
+      </div>
+      <button class="cinematic-skip-btn" id="cinematic-skip" type="button" aria-label="Skip cinematic">SKIP [ESC]</button>
+    </div>
+    <div class="cinematic-body">
+      <div class="cinematic-speaker-row">
+        <span class="cinematic-speaker" id="cinematic-speaker">SYSTEM</span>
+      </div>
+      <div class="cinematic-text-box">
+        <p class="cinematic-text" id="cinematic-text"></p>
+      </div>
+    </div>
+    <div class="cinematic-footer">
+      <div class="cinematic-prompt" id="cinematic-prompt">SPACE / ENTER to continue ▾</div>
+    </div>
+  </div>
+</div>
 <main>
 <div class="stage">
 <canvas id="c"></canvas>
@@ -66,6 +90,13 @@
         <span id="achievements-count" class="achievements-count">0 / 10 Unlocked</span>
       </div>
       <div class="achievements-grid" id="achievements-grid"></div>
+    </div>
+    <div class="story-archive-section" id="story-archive-section">
+      <div class="story-archive-header">
+        <h3>The Echo Protocol (Transmissions Archive)</h3>
+        <span id="story-archive-count" class="story-archive-count">Chapter 1 Unlocked</span>
+      </div>
+      <div class="story-archive-grid" id="story-archive-grid"></div>
     </div>
     <div class="modal-actions">
       <div class="modal-actions-left">
