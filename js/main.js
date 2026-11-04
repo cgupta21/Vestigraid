@@ -133,6 +133,7 @@ let progress = loadProgress();
 let caseDeaths = 0;
 let caseTotalTicks = 0;
 let pendingChapterOutro = null;
+let caseCompletionActive = false;
 
 function say(s) {
   const msgEl = $('msg');
@@ -426,6 +427,8 @@ export function loadLevel(i, force = false, triggerStory = true) {
 
   lv = i;
   won = false;
+  caseCompletionActive = false;
+  pendingChapterOutro = null;
   caseDeaths = 0;
   caseTotalTicks = 0;
 
@@ -625,6 +628,8 @@ export function commit(auto) {
 }
 
 export function win() {
+  started = false;
+  clearInput();
   const completedCase = lv;
   saveLevelHistory(completedCase, getRecording());
 
@@ -704,21 +709,23 @@ export function win() {
 
 export function dismissCaseCompletionOverlay() {
   const ovEl = $('ov');
-  if (ovEl && ovEl.style.display !== 'none' && !won) {
-    ovEl.style.display = 'none';
-
-    if (pendingChapterOutro) {
-      const outroToPlay = pendingChapterOutro;
-      pendingChapterOutro = null;
-      playCinematic(outroToPlay, () => {
-        progress = loadProgress();
-        loadLevelNext();
-      });
-      return true;
-    }
-
-    say('Case ' + String(lv + 1).padStart(2, '0') + ' — ' + LV[lv].n);
+  if (!caseCompletionActive || !ovEl || ovEl.style.display === 'none') {
+    return false;
   }
+  caseCompletionActive = false;
+  ovEl.style.display = 'none';
+
+  if (pendingChapterOutro) {
+    const outroToPlay = pendingChapterOutro;
+    pendingChapterOutro = null;
+    playCinematic(outroToPlay, () => {
+      progress = loadProgress();
+      loadLevelNext();
+    });
+    return true;
+  }
+
+  say('Case ' + String(lv + 1).padStart(2, '0') + ' — ' + LV[lv].n);
   return false;
 }
 
@@ -747,6 +754,8 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
   const bestPill = result.isNewBestScore ? '<div class="new-best-pill">★ NEW PERSONAL BEST</div>' : '';
 
   if (isGrandFinal) {
+    caseCompletionActive = false;
+    won = true;
     ovEl.innerHTML = `
       <img src="brand/icon.svg" alt="Vestigraid" class="ov-icon">
       <h2>ALL CASES CLOSED</h2>
@@ -776,6 +785,7 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
     $('ag').onclick = () => {
       ovEl.style.display = 'none';
       won = false;
+      caseCompletionActive = false;
       resetHistory();
       clearInput();
       paused = false;
@@ -785,6 +795,7 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
       $('ov-archive').onclick = () => {
         ovEl.style.display = 'none';
         won = false;
+        caseCompletionActive = false;
         openCaseModal();
       };
     }
@@ -792,12 +803,15 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
       $('re-last').onclick = () => {
         ovEl.style.display = 'none';
         won = false;
+        caseCompletionActive = false;
         clearInput();
         paused = false;
         loadLevel(LV.length - 1);
       };
     }
   } else {
+    caseCompletionActive = true;
+    won = false;
     ovEl.innerHTML = `
       <div class="ov-card">
         <span class="ov-tag">CASE ${String(caseIndex + 1).padStart(2, '0')} COMPLETED</span>
@@ -834,6 +848,7 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
     const btnRetry = $('btn-retry-case');
     if (btnRetry) {
       btnRetry.onclick = () => {
+        caseCompletionActive = false;
         pendingChapterOutro = null;
         ovEl.style.display = 'none';
         loadLevel(caseIndex);
@@ -842,6 +857,7 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
     const btnArchive = $('btn-ov-archive');
     if (btnArchive) {
       btnArchive.onclick = () => {
+        caseCompletionActive = false;
         pendingChapterOutro = null;
         ovEl.style.display = 'none';
         openCaseModal();
@@ -860,6 +876,7 @@ export function showOverlay(header, body, canPlayAgain) {
     $('ag').onclick = () => {
       ovEl.style.display = 'none';
       won = false;
+      caseCompletionActive = false;
       resetHistory();
       clearInput();
       paused = false;
@@ -869,6 +886,7 @@ export function showOverlay(header, body, canPlayAgain) {
       $('ov-archive').onclick = () => {
         ovEl.style.display = 'none';
         won = false;
+        caseCompletionActive = false;
         openCaseModal();
       };
     }
@@ -876,6 +894,7 @@ export function showOverlay(header, body, canPlayAgain) {
       $('re-last').onclick = () => {
         ovEl.style.display = 'none';
         won = false;
+        caseCompletionActive = false;
         clearInput();
         paused = false;
         loadLevel(LV.length - 1);
@@ -931,6 +950,7 @@ export function frame(ts) {
 function exposeTestCompatibility() {
   window.loadLevel = loadLevel;
   window.dismissCaseCompletionOverlay = dismissCaseCompletionOverlay;
+  window.isCaseCompletionActive = () => caseCompletionActive;
   window.tick = tick;
   window.commit = commit;
   window.die = die;
@@ -1097,16 +1117,14 @@ export function initGame() {
 
   initInput({
     onStartMove: () => {
-      const ovEl = $('ov');
-      if (ovEl && ovEl.style.display !== 'none' && !won) {
+      if (caseCompletionActive) {
         const launched = dismissCaseCompletionOverlay();
         if (launched) return;
       }
       if (!paused && !isModalOpen() && !isCinematicActive()) started = true;
     },
     onStrike: () => {
-      const ovEl = $('ov');
-      if (ovEl && ovEl.style.display !== 'none' && !won) {
+      if (caseCompletionActive) {
         const launched = dismissCaseCompletionOverlay();
         if (launched) return;
       }
@@ -1115,7 +1133,7 @@ export function initGame() {
     onCommit: () => { if (!isModalOpen() && !isCinematicActive()) commit(false); },
     onReset: () => { if (!isModalOpen() && !isCinematicActive()) loadLevel(lv); },
     onPause: () => {
-      if (isModalOpen() || isCinematicActive()) return;
+      if (isModalOpen() || isCinematicActive() || caseCompletionActive) return;
       paused = !paused;
       say(paused ? 'Paused. Press P to resume.' : '');
     },
@@ -1131,8 +1149,7 @@ export function initGame() {
   });
 
   window.addEventListener('keydown', (e) => {
-    const ovEl = $('ov');
-    if (ovEl && ovEl.style.display !== 'none' && !won) {
+    if (caseCompletionActive) {
       if (isCinematicActive()) return;
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
         dismissCaseCompletionOverlay();
