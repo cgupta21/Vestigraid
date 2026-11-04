@@ -44,14 +44,14 @@ export function getEnemyPos(e, tt) {
   if (e.hunt) {
     if (!e.path || !e.path.length) return { x: -1, y: -1 };
     return {
-      x: e.path[tt % e.path.length][0],
-      y: e.path[tt % e.path.length][1]
+      x: e.path[Math.max(0, tt) % e.path.length][0],
+      y: e.path[Math.max(0, tt) % e.path.length][1]
     };
   }
   const n = e.path.length;
   if (n <= 1) return { x: e.path[0][0], y: e.path[0][1] };
   const cyc = 2 * (n - 1);
-  let i = Math.floor(tt / e.speed) % cyc;
+  let i = Math.floor(Math.max(0, tt) / e.speed) % cyc;
   if (i >= n) i = cyc - i;
   return { x: e.path[i][0], y: e.path[i][1] };
 }
@@ -74,7 +74,7 @@ export function checkEnemyCollision(playerPos, prevPlayerPos, tt) {
   for (const e of enemies) {
     if (e.dead) continue;
     const a = getEnemyPos(e, tt);
-    const b = getEnemyPos(e, tt - 1);
+    const b = tt > 0 ? getEnemyPos(e, tt - 1) : a;
     const sameCellNow = a.x === playerPos.x && a.y === playerPos.y;
     const swapCross = a.x === prevPlayerPos.x && a.y === prevPlayerPos.y &&
                       b.x === playerPos.x && b.y === playerPos.y;

@@ -132,6 +132,7 @@ let flash = 0;
 let progress = loadProgress();
 let caseDeaths = 0;
 let caseTotalTicks = 0;
+let pendingChapterOutro = null;
 
 function say(s) {
   const msgEl = $('msg');
@@ -610,7 +611,7 @@ export function die() {
 }
 
 export function commit(auto) {
-  const result = commitShadowLoop(getTick());
+  const result = commitShadowLoop(getTick(), auto, getPlayerPos());
   if (!result.success) {
     say('Move first. An empty loop leaves no shadow.');
     return;
@@ -642,47 +643,16 @@ export function win() {
     }
   }
 
-  // Chapter Outro triggers upon solving the final case of each chapter
-  // Chapter 1 Outro (Case 03 / index 2)
+  // Chapter unlocks upon milestone case completion
   if (completedCase === 2) {
     unlockChapter(2);
     progress = loadProgress();
-    if (!hasViewedStory('ch1_outro', progress)) {
-      playCinematic('ch1_outro', () => {
-        progress = loadProgress();
-        loadLevelNext();
-        showCaseCompletionOverlay(completedCase, result, false);
-      });
-      return;
-    }
-  }
-
-  // Chapter 2 Outro (Case 06 / index 5)
-  if (completedCase === 5) {
+  } else if (completedCase === 5) {
     unlockChapter(3);
     progress = loadProgress();
-    if (!hasViewedStory('ch2_outro', progress)) {
-      playCinematic('ch2_outro', () => {
-        progress = loadProgress();
-        loadLevelNext();
-        showCaseCompletionOverlay(completedCase, result, false);
-      });
-      return;
-    }
-  }
-
-  // Chapter 3 Outro (Case 09 / index 8)
-  if (completedCase === 8) {
+  } else if (completedCase === 8) {
     unlockChapter(4);
     progress = loadProgress();
-    if (!hasViewedStory('ch3_outro', progress)) {
-      playCinematic('ch3_outro', () => {
-        progress = loadProgress();
-        loadLevelNext();
-        showCaseCompletionOverlay(completedCase, result, false);
-      });
-      return;
-    }
   }
 
   // Chapter 4 Outro and Grand Epilogue (Case 12 / index 11)
@@ -714,8 +684,42 @@ export function win() {
     return;
   }
 
+  // Chapter Milestone check (Cases 03, 06, 09): show completion card first; trigger outro only upon dismissal
+  const milestoneOutroMap = {
+    2: 'ch1_outro',
+    5: 'ch2_outro',
+    8: 'ch3_outro'
+  };
+  const outroId = milestoneOutroMap[completedCase];
+  if (outroId && !hasViewedStory(outroId, progress)) {
+    pendingChapterOutro = outroId;
+    showCaseCompletionOverlay(completedCase, result, false);
+    return;
+  }
+
+  pendingChapterOutro = null;
   loadLevelNext();
   showCaseCompletionOverlay(completedCase, result, false);
+}
+
+export function dismissCaseCompletionOverlay() {
+  const ovEl = $('ov');
+  if (ovEl && ovEl.style.display !== 'none' && !won) {
+    ovEl.style.display = 'none';
+
+    if (pendingChapterOutro) {
+      const outroToPlay = pendingChapterOutro;
+      pendingChapterOutro = null;
+      playCinematic(outroToPlay, () => {
+        progress = loadProgress();
+        loadLevelNext();
+      });
+      return true;
+    }
+
+    say('Case ' + String(lv + 1).padStart(2, '0') + ' — ' + LV[lv].n);
+  }
+  return false;
 }
 
 export function loadLevelNext() {
@@ -824,13 +828,13 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
     const btnNext = $('btn-next-case');
     if (btnNext) {
       btnNext.onclick = () => {
-        ovEl.style.display = 'none';
-        say('Case ' + String(lv + 1).padStart(2, '0') + ' — ' + LV[lv].n);
+        dismissCaseCompletionOverlay();
       };
     }
     const btnRetry = $('btn-retry-case');
     if (btnRetry) {
       btnRetry.onclick = () => {
+        pendingChapterOutro = null;
         ovEl.style.display = 'none';
         loadLevel(caseIndex);
       };
@@ -838,6 +842,7 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
     const btnArchive = $('btn-ov-archive');
     if (btnArchive) {
       btnArchive.onclick = () => {
+        pendingChapterOutro = null;
         ovEl.style.display = 'none';
         openCaseModal();
       };
@@ -925,12 +930,15 @@ export function frame(ts) {
 // ─── Browser / Test Compatibility Layer ──────────────────────────────────────
 function exposeTestCompatibility() {
   window.loadLevel = loadLevel;
+  window.dismissCaseCompletionOverlay = dismissCaseCompletionOverlay;
   window.tick = tick;
   window.commit = commit;
   window.die = die;
   window.win = win;
   window.startRound = startRound;
   window.ePos = getEnemyPos;
+  window.getEnemyPos = getEnemyPos;
+  window.checkEnemyCollision = checkEnemyCollision;
   window.gPos = getGhostPos;
   window.solid = (x, y, act, tt) => isSolid(x, y, grid, cols, rows, act || new Set(), getGhosts(), tt || getTick(), getGhostPos);
   window.LV = LV;
@@ -1091,14 +1099,16 @@ export function initGame() {
     onStartMove: () => {
       const ovEl = $('ov');
       if (ovEl && ovEl.style.display !== 'none' && !won) {
-        ovEl.style.display = 'none';
+        const launched = dismissCaseCompletionOverlay();
+        if (launched) return;
       }
       if (!paused && !isModalOpen() && !isCinematicActive()) started = true;
     },
     onStrike: () => {
       const ovEl = $('ov');
       if (ovEl && ovEl.style.display !== 'none' && !won) {
-        ovEl.style.display = 'none';
+        const launched = dismissCaseCompletionOverlay();
+        if (launched) return;
       }
       if (!paused && !isModalOpen() && !isCinematicActive()) started = true;
     },
@@ -1125,8 +1135,7 @@ export function initGame() {
     if (ovEl && ovEl.style.display !== 'none' && !won) {
       if (isCinematicActive()) return;
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
-        ovEl.style.display = 'none';
-        say('Case ' + String(lv + 1).padStart(2, '0') + ' — ' + LV[lv].n);
+        dismissCaseCompletionOverlay();
       }
     }
   });

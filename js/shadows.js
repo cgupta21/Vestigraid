@@ -31,9 +31,21 @@ export function getGhostPos(g, tt) {
 
 export const MAX_GHOSTS = 6;
 
-export function commitShadowLoop(t) {
-  if (t < 2) {
+export function commitShadowLoop(t, force = false, curPos = null) {
+  if (!force) {
+    const hasMovedPos = curPos && rec.length > 0 && (curPos.x !== rec[0].x || curPos.y !== rec[0].y);
+    const hasRecordedMovement = rec.some((f, idx) => idx > 0 && (f.x !== rec[0].x || f.y !== rec[0].y || f.s > 0));
+    const hasMoved = hasMovedPos || hasRecordedMovement;
+
+    if (!hasMoved || (t < 2 && !hasMovedPos)) {
+      return { success: false, count: ghosts.length };
+    }
   }
+
+  if (curPos && rec.length === 1 && (curPos.x !== rec[0].x || curPos.y !== rec[0].y)) {
+    rec.push({ x: curPos.x, y: curPos.y, f: rec[0].f, s: 0 });
+  }
+
   ghosts.push(rec.slice());
   if (ghosts.length > MAX_GHOSTS) ghosts.shift();
   return { success: true, count: ghosts.length };

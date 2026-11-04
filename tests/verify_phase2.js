@@ -201,6 +201,9 @@ async function runBrowserAudit() {
     })()`);
     await new Promise(r => setTimeout(r, 100));
 
+    assert(await evaluate('document.getElementById("ov").style.display !== "none"'), 'Case 03 victory shows case completion overlay first');
+    await pressKey('Enter', 'Enter');
+    await new Promise(r => setTimeout(r, 100));
     assert(await evaluate('isCinematicActive()'), 'Completing Case 03 triggers Chapter 1 Outro cinematic');
     const outroTitle = await evaluate('document.getElementById("cinematic-title").textContent');
     assert(outroTitle === 'Warden Alert Phase I', `Chapter 1 outro title is "Warden Alert Phase I" (got "${outroTitle}")`);

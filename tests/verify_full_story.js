@@ -153,11 +153,12 @@ async function runFullStoryAudit() {
       pos = { x: 10, y: 2 };
       tick();
     })()`);
+    assert(await evaluate('document.getElementById("ov").style.display !== "none"'), 'Case 03 victory shows case completion overlay first');
+    await pressKey('Enter', 'Enter'); // dismiss ov to trigger pending outro
     assert(await evaluate('isCinematicActive()'), 'Case 03 victory triggers Chapter 1 Outro');
     assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'Warden Alert Phase I', 'Chapter 1 outro title is "Warden Alert Phase I"');
     assert(await evaluate('getUnlockedChapters().includes(2)'), 'Chapter 2 unlocked in progress');
     await evaluate('skipCinematic()');
-    await pressKey('Enter', 'Enter'); // dismiss ov
 
     // Case 06 victory -> ch2_outro
     await evaluate('loadLevel(5, true, false)');
@@ -165,11 +166,12 @@ async function runFullStoryAudit() {
     await evaluate(`(() => {
       win();
     })()`);
+    assert(await evaluate('document.getElementById("ov").style.display !== "none"'), 'Case 06 victory shows case completion overlay first');
+    await pressKey('Enter', 'Enter'); // dismiss ov to trigger pending outro
     assert(await evaluate('isCinematicActive()'), 'Case 06 victory triggers Chapter 2 Outro');
     assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'De-Synchronization', 'Chapter 2 outro title is "De-Synchronization"');
     assert(await evaluate('getUnlockedChapters().includes(3)'), 'Chapter 3 unlocked in progress');
     await evaluate('skipCinematic()');
-    await pressKey('Enter', 'Enter'); // dismiss ov
 
     // Case 09 victory -> ch3_outro
     await evaluate('loadLevel(8, true, false)');
@@ -177,11 +179,12 @@ async function runFullStoryAudit() {
     await evaluate(`(() => {
       win();
     })()`);
+    assert(await evaluate('document.getElementById("ov").style.display !== "none"'), 'Case 09 victory shows case completion overlay first');
+    await pressKey('Enter', 'Enter'); // dismiss ov to trigger pending outro
     assert(await evaluate('isCinematicActive()'), 'Case 09 victory triggers Chapter 3 Outro');
     assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'The Core Collapsing', 'Chapter 3 outro title is "The Core Collapsing"');
     assert(await evaluate('getUnlockedChapters().includes(4)'), 'Chapter 4 unlocked in progress');
     await evaluate('skipCinematic()');
-    await pressKey('Enter', 'Enter'); // dismiss ov
 
     // ─── 5. Case 12 Victory: Chapter 4 Outro + Grand Epilogue ────────
     console.log('\n=== 5. Grand Climax: Chapter 4 Outro and Epilogue ===');
