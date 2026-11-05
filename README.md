@@ -115,10 +115,16 @@ Vestigraid/
 │   ├── input.js          # Keyboard and touch input queue
 │   ├── progress.js       # localStorage progress, scores, migrations
 │   ├── scoring.js        # Three-star targets and scoring formula
-│   └── achievements.js   # Achievements and unlock conditions
+│   ├── achievements.js   # Achievements and unlock conditions
+│   ├── story.js          # Narrative script, 4 chapters, 21 transmission sequences
+│   └── cinematics.js     # Typewriter dialog system, skip controls, overlay
 ├── brand/                # Logos and icons (SVG + PNG)
 └── tests/
-    └── suite.js          # Headless Chrome regression and gameplay tests
+    ├── suite.js                   # Headless Chrome regression and gameplay tests (429 tests)
+    ├── verify_case_transitions.js # Case completion overlay dismissal & chapter transitions
+    ├── verify_full_story.js       # Story campaign narrative consistency & dialogue audit
+    ├── verify_phase2.js           # Cinematic DOM bindings, typewriter effects & archive tests
+    └── verify_qa_fixes.js         # Shadow loop validation & combat collision regression tests
 ```
 
 ### Architecture

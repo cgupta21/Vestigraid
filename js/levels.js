@@ -235,7 +235,7 @@ export function parseLevelMap(levelIndex) {
  * Authoritative exit-validation function for Vestigraid.
  * Evaluates whether all puzzle requirements for a case are satisfied.
  *
- * @param {number} levelIndex - 0-based case index (0..7)
+ * @param {number} levelIndex - 0-based case index (0..11)
  * @param {Set<string>} actPlates - Set of currently active lowercase plate identifiers (e.g. Set {'a', 'b'})
  * @param {Array<{tag: string, dead: boolean}>} enemies - Array of enemy state objects
  * @param {Set<string>} [ghostPlates] - Set of plates currently depressed specifically by shadows
