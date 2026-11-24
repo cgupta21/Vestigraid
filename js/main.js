@@ -54,8 +54,7 @@ import {
   resetEnemiesAlive,
   getEnemyPos,
   killAt,
-  checkEnemyCollision,
-  areAllEnemiesDead
+  checkEnemyCollision
 } from './enemies.js';
 import {
   initRenderer,
@@ -71,8 +70,6 @@ import {
 } from './input.js';
 import {
   STORAGE_KEY,
-  TOTAL_CASES,
-  getInitialProgress,
   loadProgress,
   saveProgress,
   recordCaseVictory,
@@ -92,7 +89,6 @@ import {
   CHAPTERS,
   STORY_SEQUENCES,
   getStorySequence,
-  getChapter,
   getChapterSequences
 } from './story.js';
 import {
