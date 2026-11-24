@@ -8,52 +8,52 @@
  */
 export const CASE_TARGETS = [
   // Case 01: Hold the Door (6s limit = 43t) - Optimal solve ~17 ticks
-  { parLoops: 2, parTicks: 25, max3StarTicks: 32 },
+  { parLoops: 2, parTicks: 25, max3StarTicks: 36 },
 
   // Case 02: Two Keys (7s limit = 50t) - Optimal solve ~16 ticks
-  { parLoops: 3, parTicks: 28, max3StarTicks: 38 },
+  { parLoops: 3, parTicks: 28, max3StarTicks: 44 },
 
   // Case 03: The Sentry (8s limit = 57t) - Optimal solve ~22 ticks
-  { parLoops: 2, parTicks: 30, max3StarTicks: 40 },
+  { parLoops: 2, parTicks: 30, max3StarTicks: 48 },
 
   // Case 04: The Team (10s limit = 71t) - Optimal solve ~15 ticks
-  { parLoops: 2, parTicks: 28, max3StarTicks: 38 },
+  { parLoops: 2, parTicks: 28, max3StarTicks: 54 },
 
   // Case 05: The Relay (8s limit = 57t) - Optimal solve ~26 ticks (Consistent with 57t limit)
   { parLoops: 4, parTicks: 35, max3StarTicks: 45 },
 
   // Case 06: Crossfire (9s limit = 64t) - Optimal solve ~20 ticks
-  { parLoops: 2, parTicks: 30, max3StarTicks: 42 },
+  { parLoops: 2, parTicks: 30, max3StarTicks: 52 },
 
   // Case 07: The Split (10s limit = 71t) - Optimal solve ~39 ticks (Consistent with 71t limit)
   { parLoops: 4, parTicks: 45, max3StarTicks: 55 },
 
   // Case 08: The Last Loop (13s limit = 93t) - Optimal solve ~24 ticks
-  { parLoops: 3, parTicks: 38, max3StarTicks: 52 },
+  { parLoops: 3, parTicks: 38, max3StarTicks: 68 },
 
   // Case 09: The Laser Grid (10s limit = 71t) - Optimal solve ~18 ticks
-  { parLoops: 3, parTicks: 32, max3StarTicks: 45 },
+  { parLoops: 3, parTicks: 32, max3StarTicks: 56 },
 
   // Case 10: The Rift (11s limit = 79t) - Optimal solve ~16 ticks
-  { parLoops: 3, parTicks: 30, max3StarTicks: 44 },
+  { parLoops: 3, parTicks: 30, max3StarTicks: 60 },
 
   // Case 11: The Shift (12s limit = 86t) - Optimal solve ~22 ticks
-  { parLoops: 3, parTicks: 34, max3StarTicks: 48 },
+  { parLoops: 3, parTicks: 34, max3StarTicks: 66 },
 
   // Case 12: The Paradox (14s limit = 100t) - Optimal solve ~23 ticks
-  { parLoops: 4, parTicks: 42, max3StarTicks: 60 },
+  { parLoops: 4, parTicks: 42, max3StarTicks: 78 },
 
   // Cases 13–16: Load Shed, Return Address, Escapement, Daybreak
-  { parLoops: 3, parTicks: 30, max3StarTicks: 42 },
-  { parLoops: 3, parTicks: 26, max3StarTicks: 38 },
-  { parLoops: 4, parTicks: 46, max3StarTicks: 62 },
-  { parLoops: 5, parTicks: 60, max3StarTicks: 80 },
+  { parLoops: 3, parTicks: 30, max3StarTicks: 58 },
+  { parLoops: 3, parTicks: 26, max3StarTicks: 58 },
+  { parLoops: 4, parTicks: 46, max3StarTicks: 72 },
+  { parLoops: 5, parTicks: 60, max3StarTicks: 92 },
 
   // Storm Watch: total ticks across the recordings and the exit run.
-  { parLoops: 4, parTicks: 52, max3StarTicks: 61 },
-  { parLoops: 4, parTicks: 50, max3StarTicks: 58 },
-  { parLoops: 5, parTicks: 78, max3StarTicks: 86 },
-  { parLoops: 6, parTicks: 92, max3StarTicks: 101 }
+  { parLoops: 4, parTicks: 52, max3StarTicks: 72 },
+  { parLoops: 4, parTicks: 50, max3StarTicks: 74 },
+  { parLoops: 5, parTicks: 78, max3StarTicks: 94 },
+  { parLoops: 6, parTicks: 92, max3StarTicks: 114 }
 ];
 
 /**
