@@ -1,5 +1,6 @@
 // ─── Achievement System ──────────────────────────────────────────────────────
 
+import { LV } from './levels.js';
 import { CASE_TARGETS } from './scoring.js';
 
 export const ACHIEVEMENTS = [
@@ -54,13 +55,13 @@ export const ACHIEVEMENTS = [
   {
     id: 'perfectionist',
     name: 'Perfectionist',
-    desc: 'Earn three stars in all 12 cases.',
+    desc: 'Earn three stars in all cases.',
     icon: '👑'
   },
   {
     id: 'master_of_vestigraid',
     name: 'Master of Vestigraid',
-    desc: 'Complete all 12 cases and unlock all available achievements.',
+    desc: 'Complete all cases and unlock all available achievements.',
     icon: '🏆'
   }
 ];
@@ -94,7 +95,7 @@ export function getAchievement(id) {
 /**
  * Evaluates which achievements unlock upon completing a case.
  *
- * @param {number} caseIndex - 0-based case index (0..11)
+ * @param {number} caseIndex - 0-based case index
  * @param {CaseRunStats | any} stats - { loops, totalTicks, deaths, stars, score }
  * @param {any} progress - current player progress state
  * @returns {Achievement[]} - newly unlocked achievement definitions
@@ -147,30 +148,20 @@ export function evaluateAchievements(caseIndex, stats, progress) {
     tryUnlock('paradox_solved');
   }
 
-  // 5. Perfectionist: Earn 3 stars in all 12 cases
-  // Check whether all 12 cases now have 3 stars
+  // 5. Perfectionist: Earn 3 stars in all cases
+  // Check whether all cases now have 3 stars
   const currentStars = (progress && progress.stars) || {};
   const prevStar = (currentStars && currentStars[caseIndex] !== undefined) ? currentStars[caseIndex] : 0;
   const runStar = (stats && stats.stars !== undefined) ? stats.stars : 0;
   const starsMap = { ...currentStars, [caseIndex]: Math.max(prevStar, runStar) };
-  let all12ThreeStars = true;
-  for (let c = 0; c < 12; c++) {
-    if ((starsMap[c] || 0) < 3) {
-      all12ThreeStars = false;
-      break;
-    }
-  }
-  if (all12ThreeStars) {
+  if (LV.every((_, index) => starsMap[index] >= 3)) {
     tryUnlock('perfectionist');
   }
 
-  // 6. Master of Vestigraid: Complete all 12 cases and unlock all other achievements
+  // 6. Master of Vestigraid: Complete all cases and unlock all other achievements
   const solvedCases = (progress && Array.isArray(progress.completedCases)) ? progress.completedCases : [];
-  const allCasesSolved = (
-    solvedCases.includes(caseIndex) || solvedCases.length === 11
-  ) && (
-    new Set([...solvedCases, caseIndex]).size >= 12
-  );
+  const completed = new Set([...solvedCases, caseIndex]);
+  const allCasesSolved = LV.every((_, index) => completed.has(index));
 
   // Check if first 9 achievements are unlocked
   const first9Ids = [

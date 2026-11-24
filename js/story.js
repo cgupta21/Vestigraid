@@ -48,6 +48,13 @@ export const CHAPTERS = [
     cases: [9, 10, 11],
     desc: 'Portals, shifting bulkheads, and the core temporal loop collapse.',
     sequenceIds: ['ch4_intro', 'case10_intro', 'case11_intro', 'case12_intro', 'ch4_outro', 'epilogue']
+  },
+  {
+    number: 5,
+    title: 'The Surface Line',
+    cases: [12, 13, 14, 15],
+    desc: 'Subject 00 follows a maintenance line from the silent core to the surface.',
+    sequenceIds: ['ch5_intro', 'case13_intro', 'case14_intro', 'case15_intro', 'case16_intro', 'ch5_outro']
   }
 ];
 
@@ -656,7 +663,7 @@ export const STORY_SEQUENCES = {
       {
         speaker: 'SYSTEM',
         type: 'system',
-        text: 'ALL CASES CLOSED.'
+        text: 'CORE CASES CLOSED.'
       },
       {
         speaker: 'SYSTEM',
@@ -674,6 +681,49 @@ export const STORY_SEQUENCES = {
         text: 'END OF EXPERIMENT — OR THE BEGINNING?'
       }
     ]
+  },
+
+  ch5_intro: {
+    id: 'ch5_intro', title: 'An Open Channel', chapter: 5, category: 'chapter_intro',
+    lines: [
+      { speaker: 'SYSTEM', type: 'system', text: 'MAINTENANCE BAND // SURFACE LIFT REQUEST RECEIVED.' },
+      { speaker: 'UNKNOWN VOICE', type: 'voice', text: "I spent years listening to the core. Now that it’s quiet, I can hear rain on the lift microphone. Someone left the surface line connected." }
+    ]
+  },
+  case13_intro: {
+    id: 'case13_intro', title: 'Load Shed', chapter: 5, category: 'case_intro', caseIndex: 12,
+    lines: [
+      { speaker: 'SYSTEM', type: 'system', text: 'SERVICE LINE 13 // BREAKER A DIVERTS CURTAIN POWER.' },
+      { speaker: 'UNKNOWN VOICE', type: 'voice', text: 'That beam has its own battery. Give the first breaker your weight. When your shadow returns to it, watch the red line go dark.' }
+    ]
+  },
+  case14_intro: {
+    id: 'case14_intro', title: 'Return Address', chapter: 5, category: 'case_intro', caseIndex: 13,
+    lines: [
+      { speaker: 'SYSTEM', type: 'system', text: 'SERVICE LINE 14 // RETURN GATE CONTROL MOVED TO REMOTE VAULT.' },
+      { speaker: 'UNKNOWN VOICE', type: 'voice', text: 'The exit is right here. Someone put its release on the far side of the rift. Send an echo across. You can wait by the door for it to arrive.' }
+    ]
+  },
+  case15_intro: {
+    id: 'case15_intro', title: 'Escapement', chapter: 5, category: 'case_intro', caseIndex: 14,
+    lines: [
+      { speaker: 'SYSTEM', type: 'system', text: 'SERVICE LINE 15 // MECHANICAL GOVERNOR STILL TURNING.' },
+      { speaker: 'UNKNOWN VOICE', type: 'voice', text: 'Listen to the two shutters. One drops as the other rises. There’s room to stand between them while you wait for the second beat.' }
+    ]
+  },
+  case16_intro: {
+    id: 'case16_intro', title: 'Daybreak', chapter: 5, category: 'case_intro', caseIndex: 15,
+    lines: [
+      { speaker: 'SYSTEM', type: 'system', text: 'SURFACE LIFT // FOUR CONTACTS OPEN. TWO LOCAL PATROLS ACTIVE.' },
+      { speaker: 'UNKNOWN VOICE', type: 'voice', text: 'Venn left a pencilled note beside the lift. “Four people to call it. One to ride.” You can still make that crew.' }
+    ]
+  },
+  ch5_outro: {
+    id: 'ch5_outro', title: 'First Weather', chapter: 5, category: 'chapter_outro',
+    lines: [
+      { speaker: 'SYSTEM', type: 'system', text: 'LIFT AT SURFACE // DOORS OPEN.' },
+      { speaker: 'UNKNOWN VOICE', type: 'voice', text: 'For a moment the microphone picks up five sets of footsteps. Then the doors close behind you. Only one set keeps walking in the rain.' }
+    ]
   }
 };
 
@@ -688,7 +738,7 @@ export function getStorySequence(id) {
 
 /**
  * Retrieves metadata for a specific chapter.
- * @param {number} chapterNumber - 1..4
+ * @param {number} chapterNumber - 1-based chapter number
  * @returns {typeof CHAPTERS[0] | null}
  */
 export function getChapter(chapterNumber) {

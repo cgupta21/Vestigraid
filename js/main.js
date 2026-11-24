@@ -229,9 +229,9 @@ export function renderCaseGrid() {
     const totalScore = getTotalScore(progress);
     const unlockedAchs = getUnlockedAchievements(progress).length;
     statsBar.innerHTML = `
-      <div class="stat-pill"><span class="stat-pill-label">Cases:</span><span class="stat-pill-val">${completedCount} / 12</span></div>
-      <div class="stat-pill"><span class="stat-pill-label">Stars:</span><span class="stat-pill-val">${totalStars} / 36 ★</span></div>
-      <div class="stat-pill"><span class="stat-pill-label">Score:</span><span class="stat-pill-val">${totalScore.toLocaleString()} / 12,000</span></div>
+      <div class="stat-pill"><span class="stat-pill-label">Cases:</span><span class="stat-pill-val">${completedCount} / ${LV.length}</span></div>
+      <div class="stat-pill"><span class="stat-pill-label">Stars:</span><span class="stat-pill-val">${totalStars} / ${LV.length * 3} ★</span></div>
+      <div class="stat-pill"><span class="stat-pill-label">Score:</span><span class="stat-pill-val">${totalScore.toLocaleString()} / ${(LV.length * 1000).toLocaleString()}</span></div>
       <div class="stat-pill"><span class="stat-pill-label">Accreditations:</span><span class="stat-pill-val">${unlockedAchs} / 10 🏆</span></div>
     `;
   }
@@ -388,15 +388,8 @@ export function checkAndTriggerStoryForLevel(caseIndex) {
 
   const caseIntroId = 'case' + String(caseIndex + 1).padStart(2, '0') + '_intro';
 
-  /** @type {Record<number, string>} */
-  const chapterIntroMap = {
-    0: 'ch1_intro',
-    3: 'ch2_intro',
-    6: 'ch3_intro',
-    9: 'ch4_intro'
-  };
-
-  const chIntroId = chapterIntroMap[caseIndex];
+  const chapter = CHAPTERS.find(ch => ch.cases[0] === caseIndex);
+  const chIntroId = chapter && 'ch' + chapter.number + '_intro';
 
   if (chIntroId && !hasViewedStory(chIntroId, progress)) {
     playCinematic(chIntroId, () => {
@@ -644,63 +637,41 @@ export function win() {
     }
   }
 
-  // Chapter unlocks upon milestone case completion
-  if (completedCase === 2) {
-    unlockChapter(2);
-    progress = loadProgress();
-  } else if (completedCase === 5) {
-    unlockChapter(3);
-    progress = loadProgress();
-  } else if (completedCase === 8) {
-    unlockChapter(4);
-    progress = loadProgress();
+  const chapter = CHAPTERS.find(ch => ch.cases.at(-1) === completedCase);
+  const nextChapter = CHAPTERS.find(ch => ch.cases[0] === completedCase + 1);
+  if (nextChapter) progress = unlockChapter(nextChapter.number);
+
+  const finalCase = completedCase === LV.length - 1;
+  function showResult() {
+    if (!finalCase) loadLevelNext(!nextChapter);
+    showCaseCompletionOverlay(completedCase, result, finalCase);
   }
 
-  // Chapter 4 Outro and Grand Epilogue (Case 12 / index 11)
-  if (completedCase === LV.length - 1) {
-    won = true;
-    progress = loadProgress();
-    if (!hasViewedStory('ch4_outro', progress)) {
-      playCinematic('ch4_outro', () => {
-        progress = loadProgress();
-        if (!hasViewedStory('epilogue', progress)) {
-          playCinematic('epilogue', () => {
-            progress = loadProgress();
-            showCaseCompletionOverlay(completedCase, result, true);
-          });
-        } else {
-          showCaseCompletionOverlay(completedCase, result, true);
-        }
-      });
-      return;
-    } else if (!hasViewedStory('epilogue', progress)) {
-      playCinematic('epilogue', () => {
-        progress = loadProgress();
-        showCaseCompletionOverlay(completedCase, result, true);
-      });
-      return;
+  // The core's identity reveal still belongs to The Paradox. The surface line
+  // has its own ending, including for players who saw the original epilogue.
+  if (chapter?.number === 4 || finalCase) {
+    const scenes = chapter.sequenceIds.filter(id => {
+      const category = getStorySequence(id).category;
+      return (category === 'chapter_outro' || category === 'epilogue') && !hasViewedStory(id, progress);
+    });
+    function playNextScene() {
+      const id = scenes.shift();
+      if (id) playCinematic(id, playNextScene);
+      else showResult();
     }
-
-    showCaseCompletionOverlay(completedCase, result, true);
+    won = finalCase;
+    playNextScene();
     return;
   }
 
-  // Chapter Milestone check (Cases 03, 06, 09): show completion card first; trigger outro only upon dismissal
-  const milestoneOutroMap = {
-    2: 'ch1_outro',
-    5: 'ch2_outro',
-    8: 'ch3_outro'
-  };
-  const outroId = milestoneOutroMap[completedCase];
+  const outroId = chapter && 'ch' + chapter.number + '_outro';
   if (outroId && !hasViewedStory(outroId, progress)) {
     pendingChapterOutro = outroId;
     showCaseCompletionOverlay(completedCase, result, false);
     return;
   }
 
-  pendingChapterOutro = null;
-  loadLevelNext();
-  showCaseCompletionOverlay(completedCase, result, false);
+  showResult();
 }
 
 export function dismissCaseCompletionOverlay() {
@@ -722,12 +693,13 @@ export function dismissCaseCompletionOverlay() {
   }
 
   say('Case ' + String(lv + 1).padStart(2, '0') + ' — ' + LV[lv].n);
-  return false;
+  if (CHAPTERS.some(ch => ch.cases[0] === lv)) checkAndTriggerStoryForLevel(lv);
+  return isCinematicActive();
 }
 
-export function loadLevelNext() {
+export function loadLevelNext(triggerStory = true) {
   const nextLv = lv + 1;
-  loadLevel(nextLv);
+  loadLevel(nextLv, false, triggerStory);
   say('Case ' + String(nextLv + 1).padStart(2, '0') + ' — ' + LV[nextLv].n);
 }
 
@@ -755,8 +727,8 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
     ovEl.innerHTML = `
       <img src="brand/icon.svg" alt="Vestigraid" class="ov-icon">
       <h2>ALL CASES CLOSED</h2>
-      <div class="ov-paradox-subtitle">THE ECHO REMAINS &bull; SUBJECT 00 STATUS ACTIVE<br><em>END OF EXPERIMENT — OR THE BEGINNING?</em></div>
-      <p>You completed all 12 sectors and broke the loop forever.<br>Loops on final case: ${result.runStats.loops}</p>
+      <div class="ov-paradox-subtitle">SURFACE LINE CLEAR &bull; SUBJECT 00 STATUS ACTIVE</div>
+      <p>You cleared all ${LV.length} cases. The lift doors open onto daylight.<br>Loops on final case: ${result.runStats.loops}</p>
       <div class="ov-stars">${starsHtml}</div>
       <div class="ov-score-row">
         <span class="ov-score-val">${result.score}</span>

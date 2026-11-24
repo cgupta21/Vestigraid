@@ -1,6 +1,6 @@
 /**
  * Vestigraid Full Story Verification Script
- * Validates Chapters 1-4, Case 01-12 intros, chapter outros, and the Grand Epilogue in Chrome via CDP.
+ * Validates Chapters 1-5, Case 01-16 intros, chapter outros, and the Grand Epilogue in Chrome via CDP.
  */
 
 const { spawn } = require('child_process');
@@ -80,18 +80,18 @@ async function runFullStoryAudit() {
     const originalSave = await evaluate('localStorage.getItem("vestigraid_progress_v1")');
 
     console.log('===============================================================');
-    console.log(' FULL STORY AUDIT: THE ECHO PROTOCOL (CHAPTERS 1–4 & EPILOGUE)');
+    console.log(' FULL STORY AUDIT: THE ECHO PROTOCOL (CHAPTERS 1–5)');
     console.log('===============================================================\n');
 
     // ─── 1. Registry & Metadata Verification ────────────────────────
     console.log('=== 1. Registry & Metadata ===');
     const totalChapters = await evaluate('CHAPTERS.length');
-    assert(totalChapters === 4, 'Exactly 4 chapters defined');
+    assert(totalChapters === 5, 'Exactly 5 chapters defined');
     const totalSequences = await evaluate('Object.keys(STORY_SEQUENCES).length');
-    assert(totalSequences === 21, 'Exactly 21 story sequences registered across all 4 chapters');
+    assert(totalSequences === 27, 'Exactly 27 story sequences registered across all 5 chapters');
 
-    // ─── 2. All 12 Case Introductions & Triggers ────────────────────
-    console.log('\n=== 2. All 12 Case Introductions ===');
+    // ─── 2. All 16 Case Introductions & Triggers ────────────────────
+    console.log('\n=== 2. All 16 Case Introductions ===');
     await evaluate('localStorage.clear(); resetProgress();');
 
     // Expected mapping for each case:
@@ -107,7 +107,11 @@ async function runFullStoryAudit() {
       { caseIdx: 8, title: 'The Laser Grid', chapter: 3, speaker: 'SYSTEM' },
       { caseIdx: 9, title: 'The Rift', chapter: 4, speaker: 'SYSTEM' },
       { caseIdx: 10, title: 'The Shift', chapter: 4, speaker: 'SYSTEM' },
-      { caseIdx: 11, title: 'The Paradox', chapter: 4, speaker: 'SYSTEM' }
+      { caseIdx: 11, title: 'The Paradox', chapter: 4, speaker: 'SYSTEM' },
+      { caseIdx: 12, title: 'Load Shed', chapter: 5, speaker: 'SYSTEM' },
+      { caseIdx: 13, title: 'Return Address', chapter: 5, speaker: 'SYSTEM' },
+      { caseIdx: 14, title: 'Escapement', chapter: 5, speaker: 'SYSTEM' },
+      { caseIdx: 15, title: 'Daybreak', chapter: 5, speaker: 'SYSTEM' }
     ];
 
     for (const item of expectedIntros) {
@@ -122,13 +126,14 @@ async function runFullStoryAudit() {
       assert(await evaluate(`hasViewedStory("${caseId}")`), `${caseId} marked as viewed`);
     }
 
-    // ─── 3. Four Chapter Introductions ──────────────────────────────
-    console.log('\n=== 3. Four Chapter Introductions ===');
+    // ─── 3. Five Chapter Introductions ──────────────────────────────
+    console.log('\n=== 3. Five Chapter Introductions ===');
     const expectedChapterIntros = [
       { id: 'ch1_intro', title: 'Signal in the Dark', chapter: 1 },
       { id: 'ch2_intro', title: 'The Proving Grounds', chapter: 2 },
       { id: 'ch3_intro', title: 'Spatial Degradation', chapter: 3 },
-      { id: 'ch4_intro', title: 'The Loop Collapse', chapter: 4 }
+      { id: 'ch4_intro', title: 'The Loop Collapse', chapter: 4 },
+      { id: 'ch5_intro', title: 'An Open Channel', chapter: 5 }
     ];
 
     for (const ch of expectedChapterIntros) {
@@ -142,7 +147,7 @@ async function runFullStoryAudit() {
       assert(await evaluate(`hasViewedStory("${ch.id}")`), `${ch.id} marked as viewed`);
     }
 
-    // ─── 4. Four Chapter Outros & Case Victories ─────────────────────
+    // ─── 4. Chapter Outros & Case Victories ─────────────────────
     console.log('\n=== 4. Chapter Outros & Milestone Progression ===');
 
     // Case 03 victory -> ch1_outro
@@ -203,7 +208,7 @@ async function runFullStoryAudit() {
     const c4Lines = await evaluate('getStorySequence("ch4_outro").lines');
     const wardenStable = c4Lines.some(l => l.text.includes('independently stable') && l.text.includes('unnecessary'));
     assert(wardenStable, 'WARDEN recognizes Subject 00 as independently stable and declares containment unnecessary');
-    assert(await evaluate('won'), 'Game state won is set to true');
+    assert(await evaluate('!won && getUnlockedChapters().includes(5)'), 'Core victory unlocks the surface line');
 
     // Step B: Finishing Chapter 4 Outro immediately chains into Grand Epilogue
     await evaluate('skipCinematic()');
@@ -223,13 +228,13 @@ async function runFullStoryAudit() {
     const hasAmbiguousEnding = epiLines.some(l => l.text.includes('END OF EXPERIMENT — OR THE BEGINNING?'));
     assert(hasAmbiguousEnding, 'Epilogue concludes with original ending concept (END OF EXPERIMENT — OR THE BEGINNING?)');
 
-    // Step D: Finishing Epilogue reveals Grand Final Overlay
+    // Step D: Finishing the epilogue reveals the Case 12 completion card
     await evaluate('skipCinematic()');
     assert(!(await evaluate('isCinematicActive()')), 'Overlay closed after epilogue concludes');
-    const grandOverlayVisible = await evaluate('document.getElementById("ov").style.display !== "none"');
-    assert(grandOverlayVisible, 'Grand Final completion overlay displayed after epilogue');
-    const grandHeading = await evaluate('document.querySelector("#ov h2").textContent');
-    assert(grandHeading.includes('ALL CASES CLOSED'), 'Grand Final overlay displays ALL CASES CLOSED');
+    const caseOverlayVisible = await evaluate('document.getElementById("ov").style.display !== "none"');
+    assert(caseOverlayVisible, 'Case 12 completion overlay displayed after the epilogue');
+    const caseHeading = await evaluate('document.querySelector("#ov h2").textContent');
+    assert(caseHeading === 'The Paradox', 'The Paradox completion card follows the epilogue');
 
     // ─── 6. Replay Persistence & Sector Archive ─────────────────────
     console.log('\n=== 6. Replay Persistence & Sector Archive ===');
@@ -241,10 +246,10 @@ async function runFullStoryAudit() {
     await evaluate('loadLevel(11, true)');
     assert(!(await evaluate('isCinematicActive()')), 'Replaying Case 12 does not trigger story scenes when already viewed');
 
-    // Open Sector Archive modal: all 21 transmissions available
+    // Open Sector Archive modal: all 27 transmissions available
     await evaluate('openCaseModal()');
     const archiveTransmissionCount = await evaluate('document.querySelectorAll(".story-entry-card").length');
-    assert(archiveTransmissionCount === 21, `All 21 transmissions rendered in Sector Archive (found ${archiveTransmissionCount})`);
+    assert(archiveTransmissionCount === 27, `All 27 transmissions rendered in Sector Archive (found ${archiveTransmissionCount})`);
 
     // Replay transmission from modal (e.g. Epilogue)
     await evaluate(`(() => {

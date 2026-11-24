@@ -264,7 +264,7 @@ async function runTests() {
     await dismissActiveCinematics();
     assert((await evaluate('lv')) === 9, 'Level advanced to Case 10');
 
-    console.log('\n=== 7. Mandatory Transition: Case 12 Final Completion ===');
+    console.log('\n=== 7. Mandatory Transition: Case 12 to the Surface Line ===');
     await dismissActiveCinematics();
     await evaluate(`(() => {
       progress = loadProgress();
@@ -276,10 +276,10 @@ async function runTests() {
     await evaluate('win()');
     await new Promise(r => setTimeout(r, 100));
 
-    // Chapter 4 outro plays immediately on final case
+    // Chapter 4 outro plays immediately after solving The Paradox
     assert(await evaluate('isCinematicActive()'), 'Case 12 victory triggers Chapter 4 Outro');
     assert((await evaluate('document.getElementById("cinematic-title")?.textContent')) === 'The Warden Falls', 'Outro is "The Warden Falls"');
-    assert(await evaluate('won'), 'Game won flag is set to true');
+    assert(await evaluate('!won && getUnlockedChapters().includes(5)'), 'Case 12 unlocks Chapter 5');
 
     // Skip ch4_outro
     await evaluate('skipCinematic()');
@@ -292,6 +292,17 @@ async function runTests() {
     // Skip epilogue
     await evaluate('skipCinematic()');
     await new Promise(r => setTimeout(r, 100));
+
+    assert(await evaluate('isCaseCompletionActive()'), 'Case 12 has a Next Case button after the epilogue');
+    await clickNextCaseButton();
+    assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'An Open Channel', 'Next Case starts Chapter 5');
+    await dismissActiveCinematics();
+    assert(await evaluate('lv === 12'), 'Case 13 is playable');
+
+    await evaluate('loadLevel(15, true, false); win()');
+    assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'First Weather', 'Daybreak plays the surface line ending');
+    await evaluate('skipCinematic()');
+    assert(await evaluate('won && progress.gameCompleted'), 'Case 16 sets campaign completion');
 
     // Grand final overlay appears
     assert(await evaluate('document.getElementById("ov").style.display !== "none"'), 'Grand Final victory overlay displayed');

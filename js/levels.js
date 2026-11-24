@@ -209,6 +209,74 @@ export const LV = [
       { path: [[7, 2], [8, 2], [9, 2]], speed: 2, tag: '01' },
       { path: [[7, 5], [8, 5], [9, 5]], speed: 2, tag: '02' }
     ]
+  },
+  {
+    n: 'Load Shed',
+    timeLimit: 11,
+    time: 11,
+    requiredDoors: ['A', 'B'],
+    hint: 'The red curtain stays live until a shadow holds plate a. Cross to the breaker on b, then use both doors on the upper service lane.',
+    map: [
+      '############',
+      '#S.....ABE##',
+      '#......#####',
+      '#.a...b#####',
+      '############'
+    ],
+    lasers: [{ id: 'L1', cells: [[4, 1], [4, 2], [4, 3]], disablePlate: 'a' }]
+  },
+  {
+    n: 'Return Address',
+    timeLimit: 12,
+    time: 12,
+    requiredDoors: ['A', 'B'],
+    hint: 'The exit is beside your starting room. Hold a, cross A, and send a shadow through the rift to b. In the last loop, stay on the near side and take door B.',
+    map: [
+      '############',
+      '#E#..@##..b#',
+      '#B##A###...#',
+      '#.S...##.$.#',
+      '#..a..##...#',
+      '############'
+    ],
+    portals: [{ a: { x: 5, y: 1 }, b: { x: 9, y: 3 }, tagA: 'α', tagB: 'β' }]
+  },
+  {
+    n: 'Escapement',
+    timeLimit: 13,
+    time: 13,
+    requiredDoors: ['A', 'B', 'C'],
+    hint: 'Wind the three locks from west to east. The two shutters move on opposite beats. Wait on the floor between them, then cross the open shutter to record the next plate.',
+    map: [
+      '############',
+      '#S.#.b.#.c.#',
+      '#..A...B..C#',
+      '#.a#...#.#E#',
+      '############'
+    ],
+    shifts: [
+      { id: 'S1', cells: [[4, 1], [4, 2], [4, 3]], period: 8, activeTicks: [0, 1, 2, 3] },
+      { id: 'S2', cells: [[8, 1], [8, 2], [8, 3]], period: 8, activeTicks: [4, 5, 6, 7] }
+    ]
+  },
+  {
+    n: 'Daybreak',
+    boss: true,
+    timeLimit: 16,
+    time: 16,
+    requiredDoors: ['A', 'B', 'C', 'D'],
+    hint: 'Four contacts power the surface lift. Leave a shadow on each plate, recording strikes against the two sentries as you go. When all four lights hold, take door D to the lift.',
+    map: [
+      '############',
+      '#S..#b.#Cd##',
+      '#...A..B.#E#',
+      '#.a.#c.#..D#',
+      '############'
+    ],
+    enemies: [
+      { path: [[5, 2], [6, 2]], speed: 3, tag: '01' },
+      { path: [[8, 2], [8, 3]], speed: 3, tag: '02' }
+    ]
   }
 ];
 
@@ -235,7 +303,7 @@ export function parseLevelMap(levelIndex) {
  * Authoritative exit-validation function for Vestigraid.
  * Evaluates whether all puzzle requirements for a case are satisfied.
  *
- * @param {number} levelIndex - 0-based case index (0..11)
+ * @param {number} levelIndex - 0-based case index
  * @param {Set<string>} actPlates - Set of currently active lowercase plate identifiers (e.g. Set {'a', 'b'})
  * @param {Array<{tag: string, dead: boolean}>} enemies - Array of enemy state objects
  * @param {Set<string>} [ghostPlates] - Set of plates currently depressed specifically by shadows
@@ -246,224 +314,24 @@ export function canExitLevel(levelIndex, actPlates, enemies, ghostPlates) {
   const shadows = ghostPlates !== undefined ? ghostPlates : plates;
   const enemyList = enemies || [];
 
-  switch (levelIndex) {
-    case 0: { // Case 01 — Hold the Door
-      if (!plates.has('a') || !shadows.has('a')) {
-        return {
-          canExit: false,
-          message: 'Door A is locked — open it to unlock the exit!',
-          lockedItem: 'A'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 1: { // Case 02 — Two Keys
-      if (!plates.has('a') || !shadows.has('a')) {
-        return {
-          canExit: false,
-          message: 'Door A is locked — open it to unlock the exit!',
-          lockedItem: 'A'
-        };
-      }
-      if (!plates.has('b') || !shadows.has('b')) {
-        return {
-          canExit: false,
-          message: 'Door B is locked — open it to unlock the exit!',
-          lockedItem: 'B'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 2: { // Case 03 — The Sentry (Enemy avoidance: sentry does not need to be killed)
-      if (!plates.has('a') || !shadows.has('a')) {
-        return {
-          canExit: false,
-          message: 'Door A is locked — open it to unlock the exit!',
-          lockedItem: 'A'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 3: { // Case 04 — The Team (Mandatory combat: both sentinels must fall)
-      const aliveEnemies = enemyList.filter(e => !e.dead);
-      if (aliveEnemies.length > 0) {
-        return {
-          canExit: false,
-          message: 'Kill all enemies to unlock the exit!',
-          lockedItem: 'enemies'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 4: { // Case 05 — The Relay
-      if (!plates.has('a') || !shadows.has('a')) {
-        return {
-          canExit: false,
-          message: 'Door A is locked — open it to unlock the exit!',
-          lockedItem: 'A'
-        };
-      }
-      if (!plates.has('b') || !shadows.has('b')) {
-        return {
-          canExit: false,
-          message: 'Door B is locked — open it to unlock the exit!',
-          lockedItem: 'B'
-        };
-      }
-      if (!plates.has('c') || !shadows.has('c')) {
-        return {
-          canExit: false,
-          message: 'Door C is locked — open it to unlock the exit!',
-          lockedItem: 'C'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 5: { // Case 06 — Crossfire (Enemy avoidance permitted: sentries may be dodged or struck)
-      if (!plates.has('a') || !shadows.has('a')) {
-        return {
-          canExit: false,
-          message: 'Door A is locked — open it to unlock the exit!',
-          lockedItem: 'A'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 6: { // Case 07 — The Split
-      if (!plates.has('c') || !shadows.has('c')) {
-        return {
-          canExit: false,
-          message: 'Door C is locked — open it to unlock the exit!',
-          lockedItem: 'C'
-        };
-      }
-      const branchA = plates.has('a') && shadows.has('a');
-      const branchB = plates.has('b') && shadows.has('b');
-      if (!branchA && !branchB) {
-        return {
-          canExit: false,
-          message: 'Door A is locked — open it to unlock the exit!',
-          lockedItem: 'A'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 7: { // Case 08 — The Last Loop (Mandatory combat & door: both sentinels dead AND Door B open)
-      const aliveEnemies = enemyList.filter(e => !e.dead);
-      if (aliveEnemies.length > 0) {
-        return {
-          canExit: false,
-          message: 'Kill all enemies to unlock the exit!',
-          lockedItem: 'enemies'
-        };
-      }
-      if (!plates.has('b') || !shadows.has('b')) {
-        return {
-          canExit: false,
-          message: 'Door B is locked — open it to unlock the exit!',
-          lockedItem: 'B'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 8: { // Case 09 — The Laser Grid
-      if (!plates.has('a') || !shadows.has('a')) {
-        return {
-          canExit: false,
-          message: 'Door A is locked — open it to unlock the exit!',
-          lockedItem: 'A'
-        };
-      }
-      if (!plates.has('b') || !shadows.has('b')) {
-        return {
-          canExit: false,
-          message: 'Door B is locked — open it to unlock the exit!',
-          lockedItem: 'B'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 9: { // Case 10 — The Rift
-      if (!plates.has('a') || !shadows.has('a')) {
-        return {
-          canExit: false,
-          message: 'Door A is locked — open it to unlock the exit!',
-          lockedItem: 'A'
-        };
-      }
-      if (!plates.has('b') || !shadows.has('b')) {
-        return {
-          canExit: false,
-          message: 'Door B is locked — open it to unlock the exit!',
-          lockedItem: 'B'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 10: { // Case 11 — The Shift
-      if (!plates.has('a') || !shadows.has('a')) {
-        return {
-          canExit: false,
-          message: 'Door A is locked — open it to unlock the exit!',
-          lockedItem: 'A'
-        };
-      }
-      if (!plates.has('b') || !shadows.has('b')) {
-        return {
-          canExit: false,
-          message: 'Door B is locked — open it to unlock the exit!',
-          lockedItem: 'B'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    case 11: { // Case 12 — The Paradox (Final Boss)
-      const aliveEnemies = enemyList.filter(e => !e.dead);
-      if (aliveEnemies.length > 0) {
-        return {
-          canExit: false,
-          message: 'Kill all enemies to unlock the exit!',
-          lockedItem: 'enemies'
-        };
-      }
-      if (!plates.has('a') || !shadows.has('a')) {
-        return {
-          canExit: false,
-          message: 'Door A is locked — open it to unlock the exit!',
-          lockedItem: 'A'
-        };
-      }
-      if (!plates.has('b') || !shadows.has('b')) {
-        return {
-          canExit: false,
-          message: 'Door B is locked — open it to unlock the exit!',
-          lockedItem: 'B'
-        };
-      }
-      if (!plates.has('c') || !shadows.has('c')) {
-        return {
-          canExit: false,
-          message: 'Door C is locked — open it to unlock the exit!',
-          lockedItem: 'C'
-        };
-      }
-      return { canExit: true, message: '' };
-    }
-
-    default:
-      return { canExit: true, message: '' };
+  const level = LV[levelIndex];
+  if (level?.boss && enemyList.some(enemy => !enemy.dead)) {
+    return { canExit: false, message: 'Kill all enemies to unlock the exit!', lockedItem: 'enemies' };
   }
+
+  const isHeld = door => plates.has(door.toLowerCase()) && shadows.has(door.toLowerCase());
+  let lockedDoor = level?.requiredDoors?.find(door => !isHeld(door));
+  if (!lockedDoor && level?.branchDoors && !level.branchDoors.some(isHeld)) {
+    lockedDoor = level.branchDoors[0];
+  }
+  if (lockedDoor) {
+    return {
+      canExit: false,
+      message: 'Door ' + lockedDoor + ' is locked — open it to unlock the exit!',
+      lockedItem: lockedDoor
+    };
+  }
+  return { canExit: true, message: '' };
 }
 
 export function getLevelLasers(levelIndex) {

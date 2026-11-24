@@ -41,7 +41,13 @@ export const CASE_TARGETS = [
   { parLoops: 3, parTicks: 34, max3StarTicks: 48 },
 
   // Case 12: The Paradox (14s limit = 100t) - Optimal solve ~23 ticks
-  { parLoops: 4, parTicks: 42, max3StarTicks: 60 }
+  { parLoops: 4, parTicks: 42, max3StarTicks: 60 },
+
+  // Cases 13–16: Load Shed, Return Address, Escapement, Daybreak
+  { parLoops: 3, parTicks: 30, max3StarTicks: 42 },
+  { parLoops: 3, parTicks: 26, max3StarTicks: 38 },
+  { parLoops: 4, parTicks: 46, max3StarTicks: 62 },
+  { parLoops: 5, parTicks: 60, max3StarTicks: 80 }
 ];
 
 /**
