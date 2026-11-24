@@ -727,8 +727,8 @@ export function showCaseCompletionOverlay(caseIndex, result, isGrandFinal) {
     ovEl.innerHTML = `
       <img src="brand/icon.svg" alt="Vestigraid" class="ov-icon">
       <h2>ALL CASES CLOSED</h2>
-      <div class="ov-paradox-subtitle">COAST MAST ONLINE &bull; SUBJECT 00 STATUS ACTIVE</div>
-      <p>You cleared all ${LV.length} cases. The harbour received your warning.<br>Loops on final case: ${result.runStats.loops}</p>
+      <div class="ov-paradox-subtitle">BREAKWATER CLEAR &bull; SUBJECT 00 STATUS FREE</div>
+      <p>You cleared all ${LV.length} cases. The launch reached open water.<br>Loops on final case: ${result.runStats.loops}</p>
       <div class="ov-stars">${starsHtml}</div>
       <div class="ov-score-row">
         <span class="ov-score-val">${result.score}</span>

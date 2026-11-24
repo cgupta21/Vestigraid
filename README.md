@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/JavaScript-ES2022%20Modules-F7DF1E?logo=javascript&logoColor=black" alt="JavaScript ES2022">
   <img src="https://img.shields.io/badge/HTML5-Canvas-E34F26?logo=html5&logoColor=white" alt="HTML5 Canvas">
   <img src="https://img.shields.io/badge/CSS3-Grid%20%26%20Flex-1572B6?logo=css3&logoColor=white" alt="CSS3">
-  <img src="https://img.shields.io/badge/Cases-20-orange" alt="20 Cases">
+  <img src="https://img.shields.io/badge/Cases-24-orange" alt="24 Cases">
   <img src="https://img.shields.io/badge/License-Not%20Specified-lightgrey" alt="License">
 </p>
 
@@ -28,7 +28,7 @@
 
 Each level is a **Case**. Your moves and actions are recorded in real time. When you commit a loop (or time runs out), your past run becomes a **Shadow** that replays your exact steps. Shadows can hold pressure plates to keep doors open, but they also occupy grid cells and can block your future self.
 
-Across 20 cases, puzzles escalate from holding a single door to coordinating a crew of shadows. After The Paradox, Chapter 5 follows the Surface Line through four maintenance rooms to the lift. In Chapter 6, Storm Watch, the crew restores a coastal warning mast.
+Across 24 cases, puzzles escalate from holding a single door to coordinating a crew of shadows. After The Paradox, Chapter 5 follows the Surface Line through four maintenance rooms to the lift. In Chapter 6, Storm Watch, the crew restores a coastal warning mast. In Chapter 7, The Breakwater, Subject 00 navigates the seawall to reach the open sea.
 
 ## Features
 
@@ -59,7 +59,7 @@ Across 20 cases, puzzles escalate from holding a single door to coordinating a c
 2. **Work with your echoes** – step on plates or position yourself, then press `R` to commit the loop. A shadow is created that repeats your exact timeline.
 3. **Avoid enemies** – touching an enemy (or walking into its tile) means you're **Caught**, and the current loop is erased.
 4. **Watch the timer** – if time expires before you reach the exit, your actions are automatically committed as a shadow and the next loop begins.
-5. **Reach the exit (`E`)** to advance. In boss cases (04, 08, 12, 16, 18, 20) the exit stays sealed until all enemies are defeated and required locks are held.
+5. **Reach the exit (`E`)** to advance. In boss cases (04, 08, 12, 16, 18, 20, 22, 24) the exit stays sealed until all enemies are defeated and required locks are held.
 
 ### Cases
 
@@ -85,6 +85,10 @@ Across 20 cases, puzzles escalate from holding a single door to coordinating a c
 | 18 | Blind Landing | 13s | Record strikes on opposite banks of a rift. |
 | 19 | Counterweight | 15s | Double back through a shutter and a pulsing beam with four locks held. |
 | 20 | Last Broadcast | 18s | Hold five contacts, clear two patrols, and cross a live transmitter bay. |
+| 21 | High Tide | 13s | Time crossings through sluice bulkheads and spray curtains on sea swell rhythms. |
+| 22 | The Slipway | 14s | Clear the boatyard slipway through a rift portal while two sentries patrol. |
+| 23 | Fog Beacon | 16s | Align four fuel valves while the optical beacon sweeps the lower gallery. |
+| 24 | Open Sea | 18s | Boss finale: synchronize five pier breakers and defeat both breakwater patrols. |
 
 ## Screenshot
 
@@ -177,7 +181,7 @@ Then open `http://localhost:8000`.
 
 ## Testing
 
-The headless Chrome suite covers canvas scaling, collisions and walls, combat and cooldowns, state transitions, timer behavior, brand assets, responsive layout, and full solution playthroughs of all 20 cases.
+The headless Chrome suite covers canvas scaling, collisions and walls, combat and cooldowns, state transitions, timer behavior, brand assets, responsive layout, and full solution playthroughs of all 24 cases.
 
 ```bash
 node tests/suite.js

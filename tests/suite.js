@@ -1,6 +1,6 @@
 /**
  * Vestigraid Comprehensive Verification & Regression Test Suite
- * Tests all 20 cases in Chrome via CDP.
+ * Tests all 24 cases in Chrome via CDP.
  */
 
 const { spawn } = require('child_process');
@@ -72,7 +72,7 @@ async function runTests() {
     }
 
     // Grant full unlock for regression tests 1-10
-    await evaluate('progress.highestUnlocked = LV.length - 1; progress.completedCases = [0,1,2,3,4,5,6,7,8,9,10,11]; progress.story = { viewed: Object.keys(STORY_SEQUENCES), unlockedChapters: [1,2,3,4,5,6] }; saveProgress(progress); if (typeof skipCinematic === "function" && isCinematicActive()) skipCinematic();');
+    await evaluate('progress.highestUnlocked = LV.length - 1; progress.completedCases = [0,1,2,3,4,5,6,7,8,9,10,11]; progress.story = { viewed: Object.keys(STORY_SEQUENCES), unlockedChapters: [1,2,3,4,5,6,7] }; saveProgress(progress); if (typeof skipCinematic === "function" && isCinematicActive()) skipCinematic();');
 
     // Precise key tap that waits for exactly one tick to be consumed
     async function tap(key, code) {
@@ -116,7 +116,11 @@ async function runTests() {
       { lv: 16, w: 896, h: 320, name: 'Case 17' },
       { lv: 17, w: 896, h: 384, name: 'Case 18' },
       { lv: 18, w: 896, h: 384, name: 'Case 19' },
-      { lv: 19, w: 896, h: 392, name: 'Case 20' }
+      { lv: 19, w: 896, h: 392, name: 'Case 20' },
+      { lv: 20, w: 896, h: 320, name: 'Case 21' },
+      { lv: 21, w: 896, h: 384, name: 'Case 22' },
+      { lv: 22, w: 896, h: 384, name: 'Case 23' },
+      { lv: 23, w: 896, h: 392, name: 'Case 24' }
     ];
     for (const d of expectedDims) {
       await evaluate(`loadLevel(${d.lv})`);
@@ -817,6 +821,10 @@ async function runTests() {
       ['rdd', '.rrdrrrdrr', '..rrdrrrrrrrrur', '..........rrdrrrrrrrrdr'],
       ['ldl', '...rrruurrul*ru', 'rrruurrd', '.................uul*ld'],
       ['d', 'rrdrrrrru', '.rrdrrrrrrrrru', '......rrdrrrrrrrddr', '.........rrdrrrr...rrrddlllllllll'],
+      ['rdd', '.rrdrr*ru', '...rrdrrrd', '.....rrdrrrrrr*rur', '........rrdrrrrrrrdrrrruu', '.......rrdrrrrr..rrdrrrrdd'],
+      ['rdd', '.rrdrrrdrr', '..rrdrrrrrrrrur', '..........rrdrrrrrrrrdr'],
+      ['ldl', '...rrruurrul*ru', 'rrruurrd', '.................uul*ld'],
+      ['d', 'rrdrrrrru', '.rrdrrrrrrrrru', '......rrdrrrrrrrddr', '.........rrdrrrr...rrrddlllllllll'],
       ['rdd', '.rrdrr*ru', '...rrdrrrd', '.....rrdrrrrrr*rur', '........rrdrrrrrrrdrrrruu', '.......rrdrrrrr..rrdrrrrdd']
     ];
     for (const [offset, routes] of lateCampaignRuns.entries()) {
@@ -841,14 +849,14 @@ async function runTests() {
       const stats = await evaluate(`progress.caseStats[${index}]`);
       assert(stats?.loops === routes.length && stats.deaths === 0, 'Case ' + (index + 1) + ' cleared in par loops without dying');
       assert(await evaluate(`progress.stars[${index}]`) === 3, 'Case ' + (index + 1) + ' has an attainable three-star target');
-      if (index < 19) await evaluate('dismissCaseCompletionOverlay()');
+      if (index < 23) await evaluate('dismissCaseCompletionOverlay()');
     }
-    assert(await evaluate('won && document.querySelector("#ov h2").textContent === "ALL CASES CLOSED"'), 'Last Broadcast triggers the campaign victory screen');
+    assert(await evaluate('won && document.querySelector("#ov h2").textContent === "ALL CASES CLOSED"'), 'Open Sea triggers the campaign victory screen');
     await evaluate('document.getElementById("re-last").click()');
-    assert(await evaluate('lv === 19 && !won'), 'Restart final case resets Last Broadcast');
+    assert(await evaluate('lv === 23 && !won'), 'Restart final case resets Open Sea');
 
     console.log('\n=== TEST 9: Timer Balance, Pausing, State Transitions & Auto-Commit ===');
-    // 1. Verify per-case timer values and tick computations across all 20 cases
+    // 1. Verify per-case timer values and tick computations across all 24 cases
     const expectedTimers = [
       { lv: 0, s: 6, ticks: 43, name: 'Case 01' },
       { lv: 1, s: 7, ticks: 50, name: 'Case 02' },
@@ -869,7 +877,11 @@ async function runTests() {
       { lv: 16, s: 12, ticks: 86, name: 'Case 17' },
       { lv: 17, s: 13, ticks: 93, name: 'Case 18' },
       { lv: 18, s: 15, ticks: 107, name: 'Case 19' },
-      { lv: 19, s: 18, ticks: 129, name: 'Case 20' }
+      { lv: 19, s: 18, ticks: 129, name: 'Case 20' },
+      { lv: 20, s: 13, ticks: 93, name: 'Case 21' },
+      { lv: 21, s: 14, ticks: 100, name: 'Case 22' },
+      { lv: 22, s: 16, ticks: 114, name: 'Case 23' },
+      { lv: 23, s: 18, ticks: 129, name: 'Case 24' }
     ];
     for (const exp of expectedTimers) {
       await evaluate(`loadLevel(${exp.lv})`);
@@ -1107,7 +1119,7 @@ async function runTests() {
     assert(modalVisible, 'Case selection modal is visible when opened');
 
     const modalSummary = await evaluate('document.getElementById("progress-summary").textContent');
-    assert(modalSummary.includes('6 of 20 Cases Unlocked'), `Modal displays accurate unlocked summary: "${modalSummary}"`);
+    assert(modalSummary.includes('6 of 24 Cases Unlocked'), `Modal displays accurate unlocked summary: "${modalSummary}"`);
 
     const cardStates = await evaluate(`(() => {
       const cards = document.querySelectorAll('.case-card');
@@ -1119,7 +1131,7 @@ async function runTests() {
         badgeText: c.querySelector('.case-badge')?.textContent
       }));
     })()`);
-    assert(cardStates.length === 20, 'Modal renders all 20 case cards');
+    assert(cardStates.length === 24, 'Modal renders all 24 case cards');
     assert(cardStates[0].unlocked && !cardStates[0].disabled && cardStates[0].badgeText.includes('COMPLETED'), 'Case 01 card is unlocked, enabled, and marked COMPLETED');
     assert(cardStates[5].unlocked && !cardStates[5].disabled && cardStates[5].badgeText.includes('UNLOCKED'), 'Case 06 card is unlocked and marked UNLOCKED');
     assert(cardStates[6].locked && cardStates[6].disabled && cardStates[6].badgeText.includes('LOCKED'), 'Case 07 card is locked, disabled, and has LOCKED badge');
@@ -1156,15 +1168,15 @@ async function runTests() {
     assert(postResetProg.completedCases.length === 0, 'Confirming reset clears completedCases');
     assert((await evaluate('lv')) === 0, 'Confirming reset loads Case 01');
 
-    // 11. Final Case 20 Completion & Victory Recording
-    for (let c = 0; c < 20; c++) {
+    // 11. Final Case 24 Completion & Victory Recording
+    for (let c = 0; c < 24; c++) {
       await evaluate(`markCaseCompleted(${c})`);
     }
     const finalProg = await evaluate('progress');
-    assert(finalProg.gameCompleted === true, 'Completing Case 20 records gameCompleted = true');
-    assert(finalProg.highestUnlocked === 19, 'highestUnlocked reaches 19 on full game completion');
-    assert(finalProg.completedCases.length === 20, 'All 20 cases recorded in completedCases');
-    await evaluate('progress.story = { viewed: Object.keys(STORY_SEQUENCES), unlockedChapters: [1,2,3,4,5,6] }; saveProgress(progress); if (isCinematicActive()) skipCinematic();');
+    assert(finalProg.gameCompleted === true, 'Completing Case 24 records gameCompleted = true');
+    assert(finalProg.highestUnlocked === 23, 'highestUnlocked reaches 23 on full game completion');
+    assert(finalProg.completedCases.length === 24, 'All 24 cases recorded in completedCases');
+    await evaluate('progress.story = { viewed: Object.keys(STORY_SEQUENCES), unlockedChapters: [1,2,3,4,5,6,7] }; saveProgress(progress); if (isCinematicActive()) skipCinematic();');
 
     console.log('\n=== TEST 11B: New Mechanics Unit & Integration Verification ===');
     // Laser Grid Verification
@@ -1223,10 +1235,10 @@ async function runTests() {
     assert(activePlatesMulti.includes('a') && activePlatesMulti.includes('b') && activePlatesMulti.includes('c'), 'All 3 shadows independently depress distinct plates');
 
 
-    console.log('\n=== TEST 12: Exit Validation, Gate Synchronization & Anti-Bypass Across All 20 Cases ===');
+    console.log('\n=== TEST 12: Exit Validation, Gate Synchronization & Anti-Bypass Across All 24 Cases ===');
 
-    // 1. All 20 Cases: Verify Exit is initially LOCKED at start
-    for (let c = 0; c < 20; c++) {
+    // 1. All 24 Cases: Verify Exit is initially LOCKED at start
+    for (let c = 0; c < 24; c++) {
       await evaluate(`loadLevel(${c}, true)`);
       await new Promise(r => setTimeout(r, 40));
       const initExit = await evaluate(`canExitLevel(${c})`);
@@ -1234,7 +1246,7 @@ async function runTests() {
       assert(typeof initExit.message === 'string' && initExit.message.length > 0, `Case ${String(c+1).padStart(2, '0')} provides descriptive locked message`);
     }
 
-    // 2. Anti-Bypass Verification Across All 20 Cases (Moving onto exit without puzzle solve rejects victory)
+    // 2. Anti-Bypass Verification Across All 24 Cases (Moving onto exit without puzzle solve rejects victory)
     const exitCoords = [
       { lv: 0, x: 8, y: 2, name: 'Case 01', expectedMsg: 'Door A is locked' },
       { lv: 1, x: 10, y: 3, name: 'Case 02', expectedMsg: 'Door A is locked' },
@@ -1255,7 +1267,11 @@ async function runTests() {
       { lv: 16, x: 12, y: 3, name: 'Case 17', expectedMsg: 'Door A is locked' },
       { lv: 17, x: 1, y: 2, name: 'Case 18', expectedMsg: 'Kill all enemies' },
       { lv: 18, x: 1, y: 4, name: 'Case 19', expectedMsg: 'Door A is locked' },
-      { lv: 19, x: 14, y: 5, name: 'Case 20', expectedMsg: 'Kill all enemies' }
+      { lv: 19, x: 14, y: 5, name: 'Case 20', expectedMsg: 'Kill all enemies' },
+      { lv: 20, x: 12, y: 3, name: 'Case 21', expectedMsg: 'Door A is locked' },
+      { lv: 21, x: 1, y: 2, name: 'Case 22', expectedMsg: 'Kill all enemies' },
+      { lv: 22, x: 1, y: 4, name: 'Case 23', expectedMsg: 'Door A is locked' },
+      { lv: 23, x: 14, y: 5, name: 'Case 24', expectedMsg: 'Kill all enemies' }
     ];
 
     for (const ec of exitCoords) {
@@ -1367,8 +1383,8 @@ async function runTests() {
     const c12Full = await evaluate('canExitLevel(11, new Set(["a", "b", "c"]), [{tag: "01", dead: true}, {tag: "02", dead: true}], new Set(["a", "b", "c"]))');
     assert(c12Full.canExit === true, 'Case 12 exit UNLOCKS when all sentinels are defeated and Doors A, B, and C are open');
 
-    // 5. Visual State & Gameplay Exit Synchronization Across All 20 Cases
-    for (let c = 0; c < 20; c++) {
+    // 5. Visual State & Gameplay Exit Synchronization Across All 24 Cases
+    for (let c = 0; c < 24; c++) {
       await evaluate(`loadLevel(${c}, true)`);
       await new Promise(r => setTimeout(r, 40));
       // At start, canExitLevel is false, so renderer renders locked state (red)
@@ -1513,9 +1529,9 @@ async function runTests() {
     await evaluate('recordCaseVictory(2, { loops: 4, totalTicks: 60, deaths: 2 })'); // 1 star
     assert((await evaluate('progress')).stars[2] === 3, 'Worse replay preserves 3 stars');
 
-    // Par values configured across all 20 cases
+    // Par values configured across all 24 cases
     const targetsLen = await evaluate('CASE_TARGETS.length');
-    assert(targetsLen === 20, 'Case performance targets configured for all 20 cases');
+    assert(targetsLen === 24, 'Case performance targets configured for all 24 cases');
 
     // Case 05 and Case 07 calibration consistency checks
     const c5Target = await evaluate('CASE_TARGETS[4]');
@@ -1528,14 +1544,14 @@ async function runTests() {
     assert(c7Target.parTicks === 45 && c7Target.max3StarTicks === 55, 'Case 07 calibrated to parTicks=45, max3StarTicks=55');
     assert(c7Target.max3StarTicks < c7LimitTicks, `Case 07 3-star max ticks (${c7Target.max3StarTicks}) is strictly within time limit (${c7LimitTicks} ticks)`);
 
-    // Universal invariant: for all 20 cases, max3StarTicks must be strictly less than the time limit
+    // Universal invariant: for all 24 cases, max3StarTicks must be strictly less than the time limit
     const allWithinLimits = await evaluate(`
       CASE_TARGETS.every((ct, idx) => {
         const limTicks = Math.round((LV[idx].timeLimit * 1000) / TICK);
         return ct.max3StarTicks < limTicks && ct.parTicks <= ct.max3StarTicks;
       })
     `);
-    assert(allWithinLimits === true, 'All 20 cases have 3-star targets strictly within their respective case time limits');
+    assert(allWithinLimits === true, 'All 24 cases have 3-star targets strictly within their respective case time limits');
 
     // Audit 1 & 2: Death tracking integrity across loops, deaths, timer expirations & resets
     await evaluate('loadLevel(0, true)');
@@ -1665,16 +1681,16 @@ async function runTests() {
     const achsAfterDup = (await evaluate('progress.achievements')).length;
     assert(achsBeforeDup === achsAfterDup, 'Replaying case does not duplicate achievements');
 
-    // 5. "Perfectionist" unlocks when all 20 cases have 3 stars
+    // 5. "Perfectionist" unlocks when all 24 cases have 3 stars
     await evaluate('resetProgress()');
-    for (let c = 0; c < 19; c++) {
+    for (let c = 0; c < 23; c++) {
       await evaluate(`recordCaseVictory(${c}, { loops: 2, totalTicks: 20, deaths: 0 })`);
     }
-    assert(!(await evaluate('progress.achievements')).includes('perfectionist'), 'Perfectionist does not unlock with only 19 cases at 3 stars');
-    await evaluate('recordCaseVictory(19, { loops: 6, totalTicks: 91, deaths: 0 })');
-    assert((await evaluate('progress.achievements')).includes('perfectionist'), 'Perfectionist unlocks when all 20 cases reach 3 stars');
+    assert(!(await evaluate('progress.achievements')).includes('perfectionist'), 'Perfectionist does not unlock with only 23 cases at 3 stars');
+    await evaluate('recordCaseVictory(23, { loops: 6, totalTicks: 91, deaths: 0 })');
+    assert((await evaluate('progress.achievements')).includes('perfectionist'), 'Perfectionist unlocks when all 24 cases reach 3 stars');
 
-    // 6. "Master of Vestigraid" unlocks when all 20 cases and all achievements are earned
+    // 6. "Master of Vestigraid" unlocks when all 24 cases and all achievements are earned
     assert((await evaluate('progress.achievements')).includes('master_of_vestigraid'), 'Master of Vestigraid unlocks when all cases and achievements are completed');
 
     console.log('\n=== TEST 15: Upgraded Completion Screen, Toast & Sector Archive UI ===');
@@ -1843,9 +1859,9 @@ async function runTests() {
     await evaluate('closeCaseModal()');
 
     console.log('\n=== TEST 18: Full Narrative Integration (Chapters 2–4 & Grand Epilogue) ===');
-    // 1. Verify all 33 story sequences exist in registry
+    // 1. Verify all 39 story sequences exist in registry
     const seqCount = await evaluate('Object.keys(STORY_SEQUENCES).length');
-    assert(seqCount === 33, `All 33 story sequences registered (found ${seqCount})`);
+    assert(seqCount === 39, `All 39 story sequences registered (found ${seqCount})`);
 
     // 2. Chapter 2 transitions
     await evaluate('playCinematic("ch2_intro")');
@@ -1901,12 +1917,12 @@ async function runTests() {
     const caseHeading = await evaluate('document.querySelector("#ov h2")?.textContent || ""');
     assert(caseHeading === 'The Paradox', 'Case 12 card follows the core epilogue');
 
-    // 6. Full Archive rendering: all 6 chapters unlocked
+    // 6. Full Archive rendering: all 7 chapters unlocked
     await evaluate('document.getElementById("ov").style.display = "none"');
-    await evaluate('progress.story.unlockedChapters = [1, 2, 3, 4, 5, 6]; saveProgress(progress);');
+    await evaluate('progress.story.unlockedChapters = [1, 2, 3, 4, 5, 6, 7]; saveProgress(progress);');
     await evaluate('openCaseModal()');
     const allTransmissionCards = await evaluate('document.querySelectorAll(".story-entry-card").length');
-    assert(allTransmissionCards === 33, `Sector Archive displays all 33 transmission replay cards across all 6 chapters (found ${allTransmissionCards})`);
+    assert(allTransmissionCards === 39, `Sector Archive displays all 39 transmission replay cards across all 7 chapters (found ${allTransmissionCards})`);
     await evaluate('closeCaseModal()');
 
     proc.kill();

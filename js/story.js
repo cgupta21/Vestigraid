@@ -60,6 +60,11 @@ export const CHAPTERS = [
     number: 6, title: 'Storm Watch', cases: [16, 17, 18, 19],
     desc: 'A coastal warning mast calls for help on the surface band.',
     sequenceIds: ['ch6_intro', 'case17_intro', 'case18_intro', 'case19_intro', 'case20_intro', 'ch6_outro']
+  },
+  {
+    number: 7, title: 'The Breakwater', cases: [20, 21, 22, 23],
+    desc: 'Beyond the coastal mast, Subject 00 crosses the breakwater to reach open water.',
+    sequenceIds: ['ch7_intro', 'case21_intro', 'case22_intro', 'case23_intro', 'case24_intro', 'ch7_outro']
   }
 ];
 
@@ -753,6 +758,30 @@ export const STORY_SEQUENCES = {
   ch6_outro: {
     id: 'ch6_outro', title: 'Acknowledged', chapter: 6, category: 'chapter_outro',
     lines: [{ speaker: 'UNKNOWN VOICE', type: 'voice', text: 'A fishing boat answers first. Then the harbour office. On the chart beside the transmitter, one by one, the little green lamps come on.' }]
+  },
+  ch7_intro: {
+    id: 'ch7_intro', title: 'The Breakwater', chapter: 7, category: 'chapter_intro',
+    lines: [{ speaker: 'UNKNOWN VOICE', type: 'voice', text: 'The storm warning is on air. Down at the waterline, the breakwater pier cuts straight out into the surf. The harbour launch is tied up at the end of the stone.' }]
+  },
+  case21_intro: {
+    id: 'case21_intro', title: 'High Tide', chapter: 7, category: 'case_intro', caseIndex: 20,
+    lines: [{ speaker: 'SYSTEM', type: 'system', text: 'SEAWALL SLUICE // High tide gates engaged. Sluice curtains cycling on sea swell rhythm.' }]
+  },
+  case22_intro: {
+    id: 'case22_intro', title: 'The Slipway', chapter: 7, category: 'case_intro', caseIndex: 21,
+    lines: [{ speaker: 'SYSTEM', type: 'system', text: 'BOATYARD SLIPWAY // Winch terminal energized. Patrol drone active along lower ramp.' }]
+  },
+  case23_intro: {
+    id: 'case23_intro', title: 'Fog Beacon', chapter: 7, category: 'case_intro', caseIndex: 22,
+    lines: [{ speaker: 'SYSTEM', type: 'system', text: 'FOG BEACON TOWER // Optical array sweeping lower gallery. Align fuel valves to open seaward gantry.' }]
+  },
+  case24_intro: {
+    id: 'case24_intro', title: 'Open Sea', chapter: 7, category: 'case_intro', caseIndex: 23,
+    lines: [{ speaker: 'SYSTEM', type: 'system', text: 'BREAKWATER PIER // Final gantry locked. Harbour launch ready for departure upon breaker synchronization.' }]
+  },
+  ch7_outro: {
+    id: 'ch7_outro', title: 'Open Water', chapter: 7, category: 'chapter_outro',
+    lines: [{ speaker: 'UNKNOWN VOICE', type: 'voice', text: 'The diesel engine roars over the surf. As the launch clears the breakwater into open water, you look back at the dark headland. For the first time in Subject 00’s life, you are steering your own loop.' }]
   }
 };
 

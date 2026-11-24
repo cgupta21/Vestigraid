@@ -309,7 +309,14 @@ async function runTests() {
     await evaluate('loadLevel(19, true, false); win()');
     assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'Acknowledged', 'Case 20 plays the mast ending');
     await evaluate('skipCinematic()');
-    assert(await evaluate('won && progress.gameCompleted'), 'Case 20 sets campaign completion');
+    assert(await evaluate('!won && !progress.gameCompleted && isCaseUnlocked(20)'), 'Last Broadcast opens The Breakwater');
+    await clickNextCaseButton();
+    assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'The Breakwater', 'Chapter 7 starts after Last Broadcast');
+    await dismissActiveCinematics();
+    await evaluate('loadLevel(23, true, false); win()');
+    assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'Open Water', 'Case 24 plays the pier ending');
+    await evaluate('skipCinematic()');
+    assert(await evaluate('won && progress.gameCompleted'), 'Case 24 sets campaign completion');
 
     // Grand final overlay appears
     assert(await evaluate('document.getElementById("ov").style.display !== "none"'), 'Grand Final victory overlay displayed');

@@ -356,6 +356,83 @@ export const LV = [
       { path: [[5, 2], [6, 2]], speed: 2, tag: '01' },
       { path: [[9, 2], [10, 2]], speed: 2, tag: '02' }
     ]
+  },
+  {
+    n: 'High Tide',
+    timeLimit: 13,
+    time: 13,
+    requiredDoors: ['A', 'B', 'C'],
+    hint: 'The seawall sluice alternates with the spray curtains. Time your crossing between the wave crests.',
+    map: [
+      '##############',
+      '#S..#....#..c#',
+      '#...A....B..##',
+      '#.a.#...b#.CE#',
+      '##############'
+    ],
+    shifts: [{ id: 'S1', cells: [[5, 1], [5, 2], [5, 3]], period: 8, activeTicks: [0, 1, 2, 3] }],
+    lasers: [{ id: 'L1', cells: [[7, 1], [7, 2], [7, 3]], period: 8, activeTicks: [4, 5, 6, 7, 0] }]
+  },
+  {
+    n: 'The Slipway',
+    boss: true,
+    timeLimit: 14,
+    time: 14,
+    requiredDoors: ['A', 'B', 'C'],
+    hint: 'The rift lands beside a patrol. A strike recorded on the far bank repeats at the same tick in later loops. The second patrol guards the home exit.',
+    map: [
+      '##############',
+      '#..C#..@##..b#',
+      '#E#B##A###...#',
+      '##.S...###.$.#',
+      '#a.....###..c#',
+      '##############'
+    ],
+    portals: [{ a: { x: 7, y: 1 }, b: { x: 11, y: 3 }, tagA: 'α', tagB: 'β' }],
+    enemies: [
+      { path: [[12, 2], [11, 2], [10, 2]], speed: 2, tag: '01' },
+      { path: [[1, 1], [2, 1]], speed: 2, tag: '02' }
+    ]
+  },
+  {
+    n: 'Fog Beacon',
+    timeLimit: 16,
+    time: 16,
+    requiredDoors: ['A', 'B', 'C', 'D'],
+    hint: 'Four fuel valves supply the fog horn. Cross the lower catwalk while the beacon beam sweeps north.',
+    map: [
+      '##############',
+      '#S..#...b#..c#',
+      '#a..A....B...#',
+      '##########C###',
+      '#ED........d.#',
+      '##############'
+    ],
+    shifts: [{ id: 'S1', cells: [[6, 1], [6, 2], [6, 4]], period: 8, activeTicks: [0, 1, 2, 3] }],
+    lasers: [{ id: 'L1', cells: [[8, 4]], period: 7, activeTicks: [0, 1, 2, 3] }]
+  },
+  {
+    n: 'Open Sea',
+    boss: true,
+    timeLimit: 18,
+    time: 18,
+    requiredDoors: ['A', 'B', 'C', 'D', 'F'],
+    hint: 'Five breaker switches align the pier gantry. Clear both breakwater sentinels before the final gantry door unlocks.',
+    map: [
+      '################',
+      '#S..#.b.#.Cd#.f#',
+      '#...A...B..##..#',
+      '#.a.#.c.#...D..#',
+      '##############F#',
+      '##############E#',
+      '################'
+    ],
+    shifts: [{ id: 'S1', cells: [[7, 1], [7, 2], [7, 3]], period: 8, activeTicks: [0, 1, 2, 3] }],
+    lasers: [{ id: 'L1', cells: [[13, 1], [13, 2], [13, 3]], period: 8, activeTicks: [2, 3, 4, 5] }],
+    enemies: [
+      { path: [[5, 2], [6, 2]], speed: 2, tag: '01' },
+      { path: [[9, 2], [10, 2]], speed: 2, tag: '02' }
+    ]
   }
 ];
 

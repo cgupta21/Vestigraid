@@ -53,7 +53,13 @@ export const CASE_TARGETS = [
   { parLoops: 4, parTicks: 52, max3StarTicks: 72 },
   { parLoops: 4, parTicks: 50, max3StarTicks: 74 },
   { parLoops: 5, parTicks: 78, max3StarTicks: 94 },
-  { parLoops: 6, parTicks: 92, max3StarTicks: 114 }
+  { parLoops: 6, parTicks: 92, max3StarTicks: 114 },
+
+  // The Breakwater: Cases 21–24
+  { parLoops: 4, parTicks: 52, max3StarTicks: 74 },
+  { parLoops: 4, parTicks: 50, max3StarTicks: 76 },
+  { parLoops: 5, parTicks: 78, max3StarTicks: 96 },
+  { parLoops: 6, parTicks: 92, max3StarTicks: 116 }
 ];
 
 /**

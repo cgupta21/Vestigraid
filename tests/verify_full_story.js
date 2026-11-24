@@ -1,6 +1,6 @@
 /**
  * Vestigraid Full Story Verification Script
- * Validates Chapters 1-6, Case 01-20 intros, chapter outros, and the Grand Epilogue in Chrome via CDP.
+ * Validates Chapters 1-7, Case 01-24 intros, chapter outros, and the Grand Epilogue in Chrome via CDP.
  */
 
 const { spawn } = require('child_process');
@@ -80,18 +80,18 @@ async function runFullStoryAudit() {
     const originalSave = await evaluate('localStorage.getItem("vestigraid_progress_v1")');
 
     console.log('===============================================================');
-    console.log(' FULL STORY AUDIT: THE ECHO PROTOCOL (CHAPTERS 1–6)');
+    console.log(' FULL STORY AUDIT: THE ECHO PROTOCOL (CHAPTERS 1–7)');
     console.log('===============================================================\n');
 
     // ─── 1. Registry & Metadata Verification ────────────────────────
     console.log('=== 1. Registry & Metadata ===');
     const totalChapters = await evaluate('CHAPTERS.length');
-    assert(totalChapters === 6, 'Exactly 6 chapters defined');
+    assert(totalChapters === 7, 'Exactly 7 chapters defined');
     const totalSequences = await evaluate('Object.keys(STORY_SEQUENCES).length');
-    assert(totalSequences === 33, 'Exactly 33 story sequences registered across all 6 chapters');
+    assert(totalSequences === 39, 'Exactly 39 story sequences registered across all 7 chapters');
 
-    // ─── 2. All 20 Case Introductions & Triggers ────────────────────
-    console.log('\n=== 2. All 20 Case Introductions ===');
+    // ─── 2. All 24 Case Introductions & Triggers ────────────────────
+    console.log('\n=== 2. All 24 Case Introductions ===');
     await evaluate('localStorage.clear(); resetProgress();');
 
     // Expected mapping for each case:
@@ -115,7 +115,11 @@ async function runFullStoryAudit() {
       { caseIdx: 16, title: 'Dead Band', chapter: 6, speaker: 'SYSTEM' },
       { caseIdx: 17, title: 'Blind Landing', chapter: 6, speaker: 'SYSTEM' },
       { caseIdx: 18, title: 'Counterweight', chapter: 6, speaker: 'SYSTEM' },
-      { caseIdx: 19, title: 'Last Broadcast', chapter: 6, speaker: 'SYSTEM' }
+      { caseIdx: 19, title: 'Last Broadcast', chapter: 6, speaker: 'SYSTEM' },
+      { caseIdx: 20, title: 'High Tide', chapter: 7, speaker: 'SYSTEM' },
+      { caseIdx: 21, title: 'The Slipway', chapter: 7, speaker: 'SYSTEM' },
+      { caseIdx: 22, title: 'Fog Beacon', chapter: 7, speaker: 'SYSTEM' },
+      { caseIdx: 23, title: 'Open Sea', chapter: 7, speaker: 'SYSTEM' }
     ];
 
     for (const item of expectedIntros) {
@@ -130,15 +134,16 @@ async function runFullStoryAudit() {
       assert(await evaluate(`hasViewedStory("${caseId}")`), `${caseId} marked as viewed`);
     }
 
-    // ─── 3. Six Chapter Introductions ──────────────────────────────
-    console.log('\n=== 3. Six Chapter Introductions ===');
+    // ─── 3. Seven Chapter Introductions ──────────────────────────────
+    console.log('\n=== 3. Seven Chapter Introductions ===');
     const expectedChapterIntros = [
       { id: 'ch1_intro', title: 'Signal in the Dark', chapter: 1 },
       { id: 'ch2_intro', title: 'The Proving Grounds', chapter: 2 },
       { id: 'ch3_intro', title: 'Spatial Degradation', chapter: 3 },
       { id: 'ch4_intro', title: 'The Loop Collapse', chapter: 4 },
       { id: 'ch5_intro', title: 'An Open Channel', chapter: 5 },
-      { id: 'ch6_intro', title: 'Storm Watch', chapter: 6 }
+      { id: 'ch6_intro', title: 'Storm Watch', chapter: 6 },
+      { id: 'ch7_intro', title: 'The Breakwater', chapter: 7 }
     ];
 
     for (const ch of expectedChapterIntros) {
