@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/JavaScript-ES2022%20Modules-F7DF1E?logo=javascript&logoColor=black" alt="JavaScript ES2022">
   <img src="https://img.shields.io/badge/HTML5-Canvas-E34F26?logo=html5&logoColor=white" alt="HTML5 Canvas">
   <img src="https://img.shields.io/badge/CSS3-Grid%20%26%20Flex-1572B6?logo=css3&logoColor=white" alt="CSS3">
-  <img src="https://img.shields.io/badge/Cases-16-orange" alt="16 Cases">
+  <img src="https://img.shields.io/badge/Cases-20-orange" alt="20 Cases">
   <img src="https://img.shields.io/badge/License-Not%20Specified-lightgrey" alt="License">
 </p>
 
@@ -28,12 +28,12 @@
 
 Each level is a **Case**. Your moves and actions are recorded in real time. When you commit a loop (or time runs out), your past run becomes a **Shadow** that replays your exact steps. Shadows can hold pressure plates to keep doors open, but they also occupy grid cells and can block your future self.
 
-Across 16 cases, puzzles escalate from holding a single door to coordinating a crew of shadows. After The Paradox, Chapter 5 follows the Surface Line through four maintenance rooms to the lift.
+Across 20 cases, puzzles escalate from holding a single door to coordinating a crew of shadows. After The Paradox, Chapter 5 follows the Surface Line through four maintenance rooms to the lift. In Chapter 6, Storm Watch, the crew restores a coastal warning mast.
 
 ## Features
 
 - **Echo mechanics** – up to 6 shadows replay past movements and strikes in sync.
-- **Pressure plates & doors** – shadows stay on their final tile, holding plates (`a` through `d`) to open matching doors.
+- **Pressure plates & doors** – shadows stay on their final tile, holding plates (`a`, `b`, `c`, `d`, and `f`) to open matching doors.
 - **Melee combat** – strike ahead (`Space`) to defeat patrolling enemies and rogue echoes, with a 3-tick cooldown.
 - **Deterministic simulation** – fixed 140 ms tick with an accumulator loop and delta-time clamping, so gameplay is identical regardless of frame rate.
 - **Progress saving** – unlocked cases and scores persist in `localStorage`; any unlocked case can be replayed from the Case Archive.
@@ -59,7 +59,7 @@ Across 16 cases, puzzles escalate from holding a single door to coordinating a c
 2. **Work with your echoes** – step on plates or position yourself, then press `R` to commit the loop. A shadow is created that repeats your exact timeline.
 3. **Avoid enemies** – touching an enemy (or walking into its tile) means you're **Caught**, and the current loop is erased.
 4. **Watch the timer** – if time expires before you reach the exit, your actions are automatically committed as a shadow and the next loop begins.
-5. **Reach the exit (`E`)** to advance. In boss cases (04, 08, 12, 16) the exit stays sealed until all enemies are defeated and required locks are held.
+5. **Reach the exit (`E`)** to advance. In boss cases (04, 08, 12, 16, 18, 20) the exit stays sealed until all enemies are defeated and required locks are held.
 
 ### Cases
 
@@ -81,6 +81,10 @@ Across 16 cases, puzzles escalate from holding a single door to coordinating a c
 | 14 | Return Address   | 12s  | Send a shadow through a rift to unlock the exit beside the start.    |
 | 15 | Escapement       | 13s  | Cross alternating shutters while three echoes hold the locks.        |
 | 16 | Daybreak         | 16s  | Record two sentry strikes and hold four plates to call the lift.     |
+| 17 | Dead Band | 12s | Cross two staggered laser curtains while three echoes hold the locks. |
+| 18 | Blind Landing | 13s | Record strikes on opposite banks of a rift. |
+| 19 | Counterweight | 15s | Double back through a shutter and a pulsing beam with four locks held. |
+| 20 | Last Broadcast | 18s | Hold five contacts, clear two patrols, and cross a live transmitter bay. |
 
 ## Screenshot
 
@@ -120,7 +124,7 @@ Vestigraid/
 │   ├── progress.js       # localStorage progress, scores, migrations
 │   ├── scoring.js        # Three-star targets and scoring formula
 │   ├── achievements.js   # Achievements and unlock conditions
-│   ├── story.js          # Narrative script, 5 chapters, 27 transmission sequences
+│   ├── story.js          # Narrative script, 6 chapters, 33 transmission sequences
 │   └── cinematics.js     # Typewriter dialog system, skip controls, overlay
 ├── brand/                # Logos and icons (SVG + PNG)
 └── tests/
@@ -173,7 +177,7 @@ Then open `http://localhost:8000`.
 
 ## Testing
 
-The headless Chrome suite covers canvas scaling, collisions and walls, combat and cooldowns, state transitions, timer behavior, brand assets, responsive layout, and full solution playthroughs of all 16 cases.
+The headless Chrome suite covers canvas scaling, collisions and walls, combat and cooldowns, state transitions, timer behavior, brand assets, responsive layout, and full solution playthroughs of all 20 cases.
 
 ```bash
 node tests/suite.js

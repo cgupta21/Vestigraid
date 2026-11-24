@@ -1,6 +1,6 @@
 /**
  * Vestigraid Full Story Verification Script
- * Validates Chapters 1-5, Case 01-16 intros, chapter outros, and the Grand Epilogue in Chrome via CDP.
+ * Validates Chapters 1-6, Case 01-20 intros, chapter outros, and the Grand Epilogue in Chrome via CDP.
  */
 
 const { spawn } = require('child_process');
@@ -80,18 +80,18 @@ async function runFullStoryAudit() {
     const originalSave = await evaluate('localStorage.getItem("vestigraid_progress_v1")');
 
     console.log('===============================================================');
-    console.log(' FULL STORY AUDIT: THE ECHO PROTOCOL (CHAPTERS 1–5)');
+    console.log(' FULL STORY AUDIT: THE ECHO PROTOCOL (CHAPTERS 1–6)');
     console.log('===============================================================\n');
 
     // ─── 1. Registry & Metadata Verification ────────────────────────
     console.log('=== 1. Registry & Metadata ===');
     const totalChapters = await evaluate('CHAPTERS.length');
-    assert(totalChapters === 5, 'Exactly 5 chapters defined');
+    assert(totalChapters === 6, 'Exactly 6 chapters defined');
     const totalSequences = await evaluate('Object.keys(STORY_SEQUENCES).length');
-    assert(totalSequences === 27, 'Exactly 27 story sequences registered across all 5 chapters');
+    assert(totalSequences === 33, 'Exactly 33 story sequences registered across all 6 chapters');
 
-    // ─── 2. All 16 Case Introductions & Triggers ────────────────────
-    console.log('\n=== 2. All 16 Case Introductions ===');
+    // ─── 2. All 20 Case Introductions & Triggers ────────────────────
+    console.log('\n=== 2. All 20 Case Introductions ===');
     await evaluate('localStorage.clear(); resetProgress();');
 
     // Expected mapping for each case:
@@ -111,7 +111,11 @@ async function runFullStoryAudit() {
       { caseIdx: 12, title: 'Load Shed', chapter: 5, speaker: 'SYSTEM' },
       { caseIdx: 13, title: 'Return Address', chapter: 5, speaker: 'SYSTEM' },
       { caseIdx: 14, title: 'Escapement', chapter: 5, speaker: 'SYSTEM' },
-      { caseIdx: 15, title: 'Daybreak', chapter: 5, speaker: 'SYSTEM' }
+      { caseIdx: 15, title: 'Daybreak', chapter: 5, speaker: 'SYSTEM' },
+      { caseIdx: 16, title: 'Dead Band', chapter: 6, speaker: 'SYSTEM' },
+      { caseIdx: 17, title: 'Blind Landing', chapter: 6, speaker: 'SYSTEM' },
+      { caseIdx: 18, title: 'Counterweight', chapter: 6, speaker: 'SYSTEM' },
+      { caseIdx: 19, title: 'Last Broadcast', chapter: 6, speaker: 'SYSTEM' }
     ];
 
     for (const item of expectedIntros) {
@@ -126,14 +130,15 @@ async function runFullStoryAudit() {
       assert(await evaluate(`hasViewedStory("${caseId}")`), `${caseId} marked as viewed`);
     }
 
-    // ─── 3. Five Chapter Introductions ──────────────────────────────
-    console.log('\n=== 3. Five Chapter Introductions ===');
+    // ─── 3. Six Chapter Introductions ──────────────────────────────
+    console.log('\n=== 3. Six Chapter Introductions ===');
     const expectedChapterIntros = [
       { id: 'ch1_intro', title: 'Signal in the Dark', chapter: 1 },
       { id: 'ch2_intro', title: 'The Proving Grounds', chapter: 2 },
       { id: 'ch3_intro', title: 'Spatial Degradation', chapter: 3 },
       { id: 'ch4_intro', title: 'The Loop Collapse', chapter: 4 },
-      { id: 'ch5_intro', title: 'An Open Channel', chapter: 5 }
+      { id: 'ch5_intro', title: 'An Open Channel', chapter: 5 },
+      { id: 'ch6_intro', title: 'Storm Watch', chapter: 6 }
     ];
 
     for (const ch of expectedChapterIntros) {
@@ -249,7 +254,7 @@ async function runFullStoryAudit() {
     // Open Sector Archive modal: all 27 transmissions available
     await evaluate('openCaseModal()');
     const archiveTransmissionCount = await evaluate('document.querySelectorAll(".story-entry-card").length');
-    assert(archiveTransmissionCount === 27, `All 27 transmissions rendered in Sector Archive (found ${archiveTransmissionCount})`);
+    assert(archiveTransmissionCount === 27, `All 27 transmissions from the first five chapters rendered in Sector Archive (found ${archiveTransmissionCount})`);
 
     // Replay transmission from modal (e.g. Epilogue)
     await evaluate(`(() => {

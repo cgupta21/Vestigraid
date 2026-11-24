@@ -47,7 +47,13 @@ export const CASE_TARGETS = [
   { parLoops: 3, parTicks: 30, max3StarTicks: 42 },
   { parLoops: 3, parTicks: 26, max3StarTicks: 38 },
   { parLoops: 4, parTicks: 46, max3StarTicks: 62 },
-  { parLoops: 5, parTicks: 60, max3StarTicks: 80 }
+  { parLoops: 5, parTicks: 60, max3StarTicks: 80 },
+
+  // Storm Watch: total ticks across the recordings and the exit run.
+  { parLoops: 4, parTicks: 52, max3StarTicks: 61 },
+  { parLoops: 4, parTicks: 50, max3StarTicks: 58 },
+  { parLoops: 5, parTicks: 78, max3StarTicks: 86 },
+  { parLoops: 6, parTicks: 92, max3StarTicks: 101 }
 ];
 
 /**

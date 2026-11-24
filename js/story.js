@@ -55,6 +55,11 @@ export const CHAPTERS = [
     cases: [12, 13, 14, 15],
     desc: 'Subject 00 follows a maintenance line from the silent core to the surface.',
     sequenceIds: ['ch5_intro', 'case13_intro', 'case14_intro', 'case15_intro', 'case16_intro', 'ch5_outro']
+  },
+  {
+    number: 6, title: 'Storm Watch', cases: [16, 17, 18, 19],
+    desc: 'A coastal warning mast calls for help on the surface band.',
+    sequenceIds: ['ch6_intro', 'case17_intro', 'case18_intro', 'case19_intro', 'case20_intro', 'ch6_outro']
   }
 ];
 
@@ -724,6 +729,30 @@ export const STORY_SEQUENCES = {
       { speaker: 'SYSTEM', type: 'system', text: 'LIFT AT SURFACE // DOORS OPEN.' },
       { speaker: 'UNKNOWN VOICE', type: 'voice', text: 'For a moment the microphone picks up five sets of footsteps. Then the doors close behind you. Only one set keeps walking in the rain.' }
     ]
+  },
+  ch6_intro: {
+    id: 'ch6_intro', title: 'Storm Watch', chapter: 6, category: 'chapter_intro',
+    lines: [{ speaker: 'UNKNOWN VOICE', type: 'voice', text: 'Out beyond the lift, the rain is falling sideways. The coast mast keeps trying to broadcast a storm warning. Every time it draws power, the signal drops.' }]
+  },
+  case17_intro: {
+    id: 'case17_intro', title: 'Dead Band', chapter: 6, category: 'case_intro', caseIndex: 16,
+    lines: [{ speaker: 'SYSTEM', type: 'system', text: 'FEEDER ROOM // Two independent emitters online. Service lane between curtains rated safe for occupancy.' }]
+  },
+  case18_intro: {
+    id: 'case18_intro', title: 'Blind Landing', chapter: 6, category: 'case_intro', caseIndex: 17,
+    lines: [{ speaker: 'SYSTEM', type: 'system', text: 'RIFT TERMINAL // Both banks report patrol activity. Landing clearance expires when the next patrol crosses.' }]
+  },
+  case19_intro: {
+    id: 'case19_intro', title: 'Counterweight', chapter: 6, category: 'case_intro', caseIndex: 18,
+    lines: [{ speaker: 'SYSTEM', type: 'system', text: 'CABLE GALLERY // Inspection hatch at the east end. Walk the return cable west to reach the mast.' }]
+  },
+  case20_intro: {
+    id: 'case20_intro', title: 'Last Broadcast', chapter: 6, category: 'case_intro', caseIndex: 19,
+    lines: [{ speaker: 'SYSTEM', type: 'system', text: 'COAST MAST // Carrier requires five live contacts. Both patrol transponders must be silent before transmission.' }]
+  },
+  ch6_outro: {
+    id: 'ch6_outro', title: 'Acknowledged', chapter: 6, category: 'chapter_outro',
+    lines: [{ speaker: 'UNKNOWN VOICE', type: 'voice', text: 'A fishing boat answers first. Then the harbour office. On the chart beside the transmitter, one by one, the little green lamps come on.' }]
   }
 };
 

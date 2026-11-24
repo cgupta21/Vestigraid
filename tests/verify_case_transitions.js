@@ -302,7 +302,14 @@ async function runTests() {
     await evaluate('loadLevel(15, true, false); win()');
     assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'First Weather', 'Daybreak plays the surface line ending');
     await evaluate('skipCinematic()');
-    assert(await evaluate('won && progress.gameCompleted'), 'Case 16 sets campaign completion');
+    assert(await evaluate('!won && !progress.gameCompleted && isCaseUnlocked(16)'), 'Daybreak opens Storm Watch');
+    await clickNextCaseButton();
+    assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'Storm Watch', 'Chapter 6 starts after Daybreak');
+    await dismissActiveCinematics();
+    await evaluate('loadLevel(19, true, false); win()');
+    assert((await evaluate('document.getElementById("cinematic-title").textContent')) === 'Acknowledged', 'Case 20 plays the mast ending');
+    await evaluate('skipCinematic()');
+    assert(await evaluate('won && progress.gameCompleted'), 'Case 20 sets campaign completion');
 
     // Grand final overlay appears
     assert(await evaluate('document.getElementById("ov").style.display !== "none"'), 'Grand Final victory overlay displayed');

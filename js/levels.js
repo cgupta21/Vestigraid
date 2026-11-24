@@ -277,6 +277,85 @@ export const LV = [
       { path: [[5, 2], [6, 2]], speed: 3, tag: '01' },
       { path: [[8, 2], [8, 3]], speed: 3, tag: '02' }
     ]
+  },
+  {
+    n: 'Dead Band',
+    timeLimit: 12,
+    time: 12,
+    requiredDoors: ['A', 'B', 'C'],
+    hint: 'The two red curtains pulse out of phase. The narrow strip between them is safe for a whole cycle.',
+    map: [
+      '##############',
+      '#S..#....#..c#',
+      '#...A....B..##',
+      '#.a.#...b#.CE#',
+      '##############'
+    ],
+    lasers: [
+      { id: 'L1', cells: [[5, 1], [5, 2], [5, 3]], period: 8, activeTicks: [0, 1, 2, 3, 4] },
+      { id: 'L2', cells: [[7, 1], [7, 2], [7, 3]], period: 8, activeTicks: [4, 5, 6, 7, 0] }
+    ]
+  },
+  {
+    n: 'Blind Landing',
+    boss: true,
+    timeLimit: 13,
+    time: 13,
+    requiredDoors: ['A', 'B', 'C'],
+    hint: 'The rift lands beside a patrol. A strike recorded on the far bank repeats at the same tick in later loops. The second patrol guards the home exit.',
+    map: [
+      '##############',
+      '#..C#..@##..b#',
+      '#E#B##A###...#',
+      '##.S...###.$.#',
+      '#a.....###..c#',
+      '##############'
+    ],
+    portals: [{ a: { x: 7, y: 1 }, b: { x: 11, y: 3 }, tagA: 'α', tagB: 'β' }],
+    enemies: [
+      { path: [[12, 2], [11, 2], [10, 2]], speed: 2, tag: '01' },
+      { path: [[1, 1], [2, 1]], speed: 2, tag: '02' }
+    ]
+  },
+  {
+    n: 'Counterweight',
+    timeLimit: 15,
+    time: 15,
+    requiredDoors: ['A', 'B', 'C', 'D'],
+    hint: 'The upper and lower galleries share one shutter shaft. The lower gallery feeds back into the lift room. Check the beam before crossing its threshold.',
+    map: [
+      '##############',
+      '#S..#...b#..c#',
+      '#a..A....B...#',
+      '##########C###',
+      '#ED........d.#',
+      '##############'
+    ],
+    shifts: [{ id: 'S1', cells: [[6, 1], [6, 2], [6, 4]], period: 8, activeTicks: [0, 1, 2, 3] }],
+    lasers: [{ id: 'L1', cells: [[8, 4]], period: 7, activeTicks: [0, 1, 2, 3] }]
+  },
+  {
+    n: 'Last Broadcast',
+    boss: true,
+    timeLimit: 18,
+    time: 18,
+    requiredDoors: ['A', 'B', 'C', 'D', 'F'],
+    hint: 'Five contacts keep the mast on air. Watch both patrols from cover and record their takedowns. A fifth contact, F, powers the transmitter door.',
+    map: [
+      '################',
+      '#S..#.b.#.Cd#.f#',
+      '#...A...B..##..#',
+      '#.a.#.c.#...D..#',
+      '##############F#',
+      '##############E#',
+      '################'
+    ],
+    shifts: [{ id: 'S1', cells: [[7, 1], [7, 2], [7, 3]], period: 8, activeTicks: [0, 1, 2, 3] }],
+    lasers: [{ id: 'L1', cells: [[13, 1], [13, 2], [13, 3]], period: 8, activeTicks: [2, 3, 4, 5] }],
+    enemies: [
+      { path: [[5, 2], [6, 2]], speed: 2, tag: '01' },
+      { path: [[9, 2], [10, 2]], speed: 2, tag: '02' }
+    ]
   }
 ];
 
